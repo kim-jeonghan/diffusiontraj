@@ -4,10 +4,12 @@ from os.path import join
 
 import numpy as np
 
+import comp_diffuser.utils as utils
+
 from ...datasets import datasets as datasets
 from ...datasets.d4rl import Is_Gym_Robot_Env
 from ...rendering.maze_renderer import Maze2DRenderer
-import comp_diffuser.utils as utils
+from ...utils.planning_config import extract_planner_runtime_config
 from . import (
     TrajectoryStitchingGaussianDiffusionWithInverseDynamics,
 )
@@ -97,11 +99,9 @@ class TrajectoryStitchingMazePlanner:
             diffusion_name = getattr(self.diffusion, "diffusion_name", "our_stgl_sml")
             if diffusion_name == "dd_maze":
                 ## Jan 18 For the Decision Diffuser Baseline
-                self.policy_config = {}
-                self.trajectory_blender_config = {}
-                for k in args.__dict__.keys():
-                    if "ev_" in k:
-                        self.policy_config[k] = args.__dict__[k]
+                self.policy_config, self.trajectory_blender_config = (
+                    extract_planner_runtime_config(args)
+                )
                 from ...planners.maze_policy import MazePolicy
 
                 self.policy = MazePolicy(
@@ -112,14 +112,8 @@ class TrajectoryStitchingMazePlanner:
                 # pdb.set_trace() ## TODO: Oct 21 16:31pm, From Here
                 ## top_n: int, pick_type: str,tj_blder_config,
                 ## Setup the config to init policy
-                self.policy_config = {}
-                for k in args.__dict__.keys():
-                    if "ev_" in k:
-                        self.policy_config[k] = args.__dict__[k]
-
-                self.trajectory_blender_config = dict(
-                    blend_type=args.tjb_blend_type,
-                    exp_beta=args.tjb_exp_beta,
+                self.policy_config, self.trajectory_blender_config = (
+                    extract_planner_runtime_config(args)
                 )
 
                 self.policy = TrajectoryStitchingPolicy(

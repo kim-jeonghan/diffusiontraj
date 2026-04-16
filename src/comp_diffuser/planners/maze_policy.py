@@ -9,7 +9,8 @@ from ..models.helpers import apply_conditioning
 from ..models.trajectory_stitching.trajectory_stitching_policy import (
     TrajectoryStitchingPrediction,
 )
-import comp_diffuser.utils as utils
+from ..utils.arrays import to_np
+from ..utils.planning_config import normalize_maze_policy_config
 
 
 class MazePolicy:
@@ -24,7 +25,10 @@ class MazePolicy:
         self.diffusion_model.eval()
         self.normalizer = normalizer
         self.action_dim = normalizer.action_dim
-        self.plan_horizon = policy_config.get("ev_pl_hzn", diffusion_model.horizon)
+        policy_config = normalize_maze_policy_config(
+            policy_config, diffusion_model.horizon
+        )
+        self.plan_horizon = policy_config["plan_horizon"]
         self.diffusion_model.horizon = self.plan_horizon
         self.prediction_time_history = []
         self.return_diffusion = False
@@ -77,7 +81,7 @@ class MazePolicy:
 
         sample = apply_conditioning(sample, boundary_conditions, 0)
 
-        sample = utils.to_np(sample)
+        sample = to_np(sample)
         normalized_observations = sample[:, :, 0:]
         predicted_observation_trajectories = self.normalizer.unnormalize(
             normalized_observations,

@@ -1,27 +1,29 @@
 import copy
-
-import torch
-
-torch.backends.cudnn.benchmark = True
-torch.use_deterministic_algorithms(True)
-##
 import os.path as osp
 from datetime import datetime
 
-import comp_diffuser.utils as utils
+import torch
+
 from comp_diffuser.models.trajectory_stitching.trajectory_stitching_planner import (
     TrajectoryStitchingMazePlanner,
 )
+from comp_diffuser.utils.composition.trajectory_ranking import parse_seeds_str
+from comp_diffuser.utils.eval_utils import print_color
+from comp_diffuser.utils.serialization import get_latest_epoch
+from comp_diffuser.utils.setup import ArgsParser as BaseArgsParser
+
+torch.backends.cudnn.benchmark = True
+torch.use_deterministic_algorithms(True)
 
 
-class ArgsParser(utils.ArgsParser):
+class ArgsParser(BaseArgsParser):
     dataset: str = None
     config: str = None
     ## should not put any existing var in config here
     pl_seeds: str = "-1"  # no seed
-    # ev_n_comp: int = 2
+    # num_segments: int = 2
     plan_n_ep: int = -100  ## all if -100, auto parse to int
-    # ev_n_mcmc: int = 10
+    # num_mcmc_steps: int = 10
     # var_temp = 0.5
 
 
@@ -70,11 +72,8 @@ def main(args_train, args):
             else:
                 avg_result_dict = maze_planner.plan_once_parallel(pl_seed=pl_seeds[0])
     else:
-        utils.print_color(f"{args.pl_seeds=}")
-        raise NotImplementedError
-        avg_result_dict = m2d_planner.plan_multi_run(
-            seeds, num_ep=args.plan_n_ep, given_starts=given_starts
-        )
+        print_color(f"{args.pl_seeds=}")
+        raise NotImplementedError("multi-seed planning is not implemented")
 
     return avg_result_dict
 
@@ -86,7 +85,7 @@ if __name__ == "__main__":
     ## 1. get epoch to eval on, by default all
     loadpath = args.logbase, args.dataset, args_train.exp_name
 
-    args.pl_seeds = utils.parse_seeds_str(args.pl_seeds)  ## a list of int
+    args.pl_seeds = parse_seeds_str(args.pl_seeds)  ## a list of int
     args.n_batch_acc_probs = 10  ## A5000: 20=2.23it/s, 10=4.10it/s
 
     # pdb.set_trace()
@@ -98,40 +97,40 @@ if __name__ == "__main__":
 
     if Is_Gym_Robot_Env:  ## Ben
         if "-large-" in args_train.dataset:
-            # args.ev_n_comp = 5 # ben large
-            args.ev_pl_hzn = 736  ## aka ncp=5: 192 + (192 - 56) * 4
+            # args.num_segments = 5 # ben large
+            args.plan_horizon = 736  ## aka ncp=5: 192 + (192 - 56) * 4
             args.env_n_max_steps = 1000  ## ben large
         elif "-medium-" in args_train.dataset:
             ## ncp: 5 or 6
-            args.ev_pl_hzn = 528  ## aka ncp=5: 144 + (144-48) * 4
+            args.plan_horizon = 528  ## aka ncp=5: 144 + (144-48) * 4
             args.env_n_max_steps = 1000  ## ben
         elif "-umaze-" in args_train.dataset:
-            # args.ev_n_comp = 5 # umaze h is only 40
+            # args.num_segments = 5 # umaze h is only 40
             ## TODO: From Here Jan 19: 1:00 AM
             # args.ddim_eta = 1.0
             # args.ddim_eta = 0.0
-            args.ev_pl_hzn = 136  ## aka ncp=5
-            args.ev_pl_hzn = 160  ## aka ncp=6
-            # args.ev_pl_hzn = 40 ## smoke
+            args.plan_horizon = 136  ## aka ncp=5
+            args.plan_horizon = 160  ## aka ncp=6
+            # args.plan_horizon = 40 ## smoke
             args.env_n_max_steps = 1000  #
 
     else:
         assert False
-        args.ev_n_comp = 4
+        args.num_segments = 4
         args.env_n_max_steps = 600
 
     args.b_size_per_prob = 1
     # args.b_size_per_prob = 40
-    # args.ev_top_n = 5
-    # args.ev_pick_type = 'first'
-    # args.tjb_blend_type = 'exp'
-    # args.tjb_exp_beta = 2
+    # args.top_k = 5
+    # args.trajectory_selection = 'first'
+    # args.blend_type = 'exp'
+    # args.blend_exponential_beta = 2
 
     args.var_temp = 0.5
     # args.var_temp = 1.0
     args.cond_w = 2.0
 
-    latest_e = utils.get_latest_epoch(loadpath)
+    latest_e = get_latest_epoch(loadpath)
     # n_e = round(latest_e // 1e5) + 1 # all
     # start_e = 5e5; # 2e5 end_e =
     # depoch_list = np.arange(start_e, int(n_e * 1e5), int(1e5), dtype=np.int32).tolist()
@@ -144,7 +143,7 @@ if __name__ == "__main__":
     # sub_dir = f'{datetime.now().strftime("%y%m%d-%H%M%S")}-nm{int(args.plan_n_ep)}'
     sub_dir = (
         f'{datetime.now().strftime("%y%m%d-%H%M%S-%f")[:-3]}'
-        + f"-nm{int(args.plan_n_ep)}-phzn{args.ev_pl_hzn}"
+        + f"-nm{int(args.plan_n_ep)}-phzn{args.plan_horizon}"
         + f"-ems{args.env_n_max_steps}"
         + f"-evSd{','.join( [str(sd) for sd in args.pl_seeds] )}"
     )

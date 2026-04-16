@@ -6,8 +6,16 @@ import torch
 
 from ...guides.comp.traj_blender import Traj_Blender
 from ...guides.comp.trajectory_batches import InverseDynamicsTrajectories
-import comp_diffuser.utils as utils
 from ...utils.composition.plan_utils import split_trajs_list_by_prob
+from ...utils.composition.trajectory_ranking import (
+    compute_ovlp_dist,
+    get_np_trajs_list,
+    pick_top_n_trajs,
+)
+from ...utils.planning_config import (
+    normalize_trajectory_blender_config,
+    normalize_trajectory_stitching_policy_config,
+)
 from ..helpers import apply_conditioning
 from . import (
     TrajectoryStitchingGaussianDiffusionWithInverseDynamics,
@@ -30,17 +38,23 @@ class TrajectoryStitchingPolicy:
         self.normalizer = normalizer
         self.action_dim = normalizer.action_dim
 
-        self.num_segments = policy_config["ev_n_comp"]
-        self.top_n = policy_config["ev_top_n"]
-        self.pick_type = policy_config["ev_pick_type"]
+        policy_config = normalize_trajectory_stitching_policy_config(policy_config)
+        trajectory_blender_config = normalize_trajectory_blender_config(
+            trajectory_blender_config
+        )
+
+        self.num_segments = policy_config["num_segments"]
+        self.top_n = policy_config["top_k"]
+        self.pick_type = policy_config["trajectory_selection"]
         assert self.pick_type in ["first", "rand"]
 
-        self.inference_schedule = policy_config.get("ev_cp_infer_t_type", "interleaved")
+        self.inference_schedule = policy_config["inference_schedule"]
 
         self.trajectory_blender = Traj_Blender(
             diffusion_model,
             normalizer,
-            **trajectory_blender_config,
+            blend_type=trajectory_blender_config["blend_type"],
+            exp_beta=trajectory_blender_config["blend_exponential_beta"],
         )
         self.prediction_time_history = []
 
@@ -105,16 +119,16 @@ class TrajectoryStitchingPolicy:
 
         for problem_index in range(num_problems):
             segment_trajectories = segment_trajectories_per_problem[problem_index]
-            unnormalized_segment_trajectories = utils.get_np_trajs_list(
+            unnormalized_segment_trajectories = get_np_trajs_list(
                 segment_trajectories,
                 do_unnorm=True,
                 normalizer=self.normalizer,
             )
-            sorted_indices, _ = utils.compute_ovlp_dist(
+            sorted_indices, _ = compute_ovlp_dist(
                 unnormalized_segment_trajectories,
                 self.diffusion_model.len_ovlp_cd,
             )
-            top_ranked_segment_trajectories = utils.pick_top_n_trajs(
+            top_ranked_segment_trajectories = pick_top_n_trajs(
                 unnormalized_segment_trajectories,
                 sorted_indices,
                 self.top_n,
@@ -223,16 +237,16 @@ class TrajectoryStitchingPolicy:
 
         self.prediction_time_history.append([self.num_segments, time.time() - cur_time])
 
-        unnormalized_segment_trajectories = utils.get_np_trajs_list(
+        unnormalized_segment_trajectories = get_np_trajs_list(
             segment_trajectories,
             do_unnorm=True,
             normalizer=self.normalizer,
         )
-        sorted_indices, _ = utils.compute_ovlp_dist(
+        sorted_indices, _ = compute_ovlp_dist(
             unnormalized_segment_trajectories,
             self.diffusion_model.len_ovlp_cd,
         )
-        top_ranked_segment_trajectories = utils.pick_top_n_trajs(
+        top_ranked_segment_trajectories = pick_top_n_trajs(
             unnormalized_segment_trajectories,
             sorted_indices,
             self.top_n,
