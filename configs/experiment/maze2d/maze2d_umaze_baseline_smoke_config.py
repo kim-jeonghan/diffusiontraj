@@ -1,6 +1,6 @@
 import os.path as osp
 
-from comp_diffuser.utils import watch
+from comp_diffuser.utils.setup import watch
 
 # ------------------------ base ------------------------#
 

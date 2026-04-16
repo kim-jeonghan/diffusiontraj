@@ -5,10 +5,11 @@ from os.path import join
 
 import numpy as np
 
-import comp_diffuser.utils as utils
-
 from ..datasets import datasets as datasets
 from ..guides.policies_invdyn import Policy_InvDyn
+from ..utils.eval_utils import print_color, rename_fn, save_img, save_json
+from ..utils.serialization import load_diffusion, mkdir
+from ..utils.setup import set_seed
 
 """partially adapted from d4rl: scripts/reference_scores/maze2d_controller.py"""
 
@@ -33,7 +34,7 @@ class Maze2DEnvPlanner:
         self.env.seed(0)  ## default
 
         ## loading the dataset is too slow...
-        diffusion_experiment = utils.load_diffusion(
+        diffusion_experiment = load_diffusion(
             args.logbase,
             args_train.dataset,
             args_train.exp_name,
@@ -65,7 +66,7 @@ class Maze2DEnvPlanner:
 
     def setup_general(self):
         """general stuff for both types of setup"""
-        utils.mkdir(self.savepath)
+        mkdir(self.savepath)
         self.savepath_root = self.savepath
 
     def plan_multi_run(self, seeds, **kwargs):
@@ -79,7 +80,7 @@ class Maze2DEnvPlanner:
             self.env.seed(0)
 
             self.savepath = f"{self.savepath_root}/run-{i_s}/"
-            utils.mkdir(self.savepath)
+            mkdir(self.savepath)
             out = self.plan_once(pl_seed=sd, **kwargs)
             results_sd.append(out)
 
@@ -106,8 +107,8 @@ class Maze2DEnvPlanner:
         )
         print(json_data)
         ## save mean and std
-        utils.save_json(json_data, json_path)
-        utils.rename_fn(
+        save_json(json_data, json_path)
+        rename_fn(
             self.savepath_root, f"{self.savepath_root.rstrip(os.sep)}-sc{int(sc_mean)}"
         )
 
@@ -120,7 +121,7 @@ class Maze2DEnvPlanner:
         """
         if pl_seed is not None:
             ## seed everything
-            utils.set_seed(pl_seed)
+            set_seed(pl_seed)
         if given_starts is not None:  # if given, just evaluate the given states
             num_ep = len(given_starts)
         ep_scores = []
@@ -157,7 +158,7 @@ class Maze2DEnvPlanner:
             }
             self.policy.pl_hzn = self.pl_hzn
 
-            utils.print_color(f"{self.policy.pl_hzn=}")
+            print_color(f"{self.policy.pl_hzn=}")
 
             ## loop through timesteps
             total_reward = 0  ## accumulate reward of one episode
@@ -289,12 +290,12 @@ class Maze2DEnvPlanner:
                         np.concatenate([rows_act[i_r], rows_obs[i_r]], axis=0)
                     )  # 2H,W,C
                 img_whole = np.concatenate(img_whole)
-                utils.save_img(f_path_3, img_whole)
+                save_img(f_path_3, img_whole)
 
         ## ----------------------------------------------------------------
         ## ------------------ Finish All Eval Episodes --------------------
 
-        utils.print_color(
+        print_color(
             self.env.name,
         )
         avg_ep_scores = np.mean(ep_scores)
@@ -335,10 +336,10 @@ class Maze2DEnvPlanner:
         )
         # with open(json_path, 'w') as ff:
         # json.dump(json_data, ff, indent=2,) # sort_keys=True
-        utils.save_json(json_data, json_path)
+        save_json(json_data, json_path)
 
         # print(f'[save_plan_result]: save to {json_path}')
-        utils.rename_fn(
+        rename_fn(
             self.savepath, f"{self.savepath.rstrip(os.sep)}-sc{int(avg_ep_scores)}"
         )
 

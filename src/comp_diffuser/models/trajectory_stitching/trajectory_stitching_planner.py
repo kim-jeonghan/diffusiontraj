@@ -4,12 +4,27 @@ from os.path import join
 
 import numpy as np
 
-import comp_diffuser.utils as utils
-
 from ...datasets import datasets as datasets
 from ...datasets.d4rl import Is_Gym_Robot_Env
 from ...rendering.maze_renderer import Maze2DRenderer
+from ...utils.composition.composition_serialization import (
+    get_trajectory_stitching_eval_problem_path,
+    load_compositional_diffusion,
+    load_trajectory_stitching_dataset_normalizer,
+    load_trajectory_stitching_diffusion,
+    load_trajectory_stitching_eval_problems,
+)
+from ...utils.eval_utils import (
+    ben_luo_rowcol_to_xy,
+    ben_xy_to_luo_rowcol,
+    print_color,
+    rename_fn,
+    save_img,
+    save_json,
+)
+from ...utils.serialization import mkdir
 from ...utils.planning_config import extract_planner_runtime_config
+from ...utils.setup import set_seed
 from . import (
     TrajectoryStitchingGaussianDiffusionWithInverseDynamics,
 )
@@ -66,7 +81,7 @@ class TrajectoryStitchingMazePlanner:
         #     args_train.exp_name, epoch=args.diffusion_epoch,
         #     ld_config=ld_config)
 
-        diffusion_experiment = utils.load_trajectory_stitching_diffusion(
+        diffusion_experiment = load_trajectory_stitching_diffusion(
             args.logbase,
             args_train.dataset,
             args_train.exp_name,
@@ -77,7 +92,7 @@ class TrajectoryStitchingMazePlanner:
         # pdb.set_trace() ## check args.diffusion_epoch controllable? No, If inside parser
         ## NOTE:
         ## TODO: Oct 21 22:15 From Here, add non-load normalizer!!!
-        self.train_normalizer = utils.load_trajectory_stitching_dataset_normalizer(
+        self.train_normalizer = load_trajectory_stitching_dataset_normalizer(
             args_train,
         )
 
@@ -132,7 +147,7 @@ class TrajectoryStitchingMazePlanner:
         self.savepath = args.savepath
         self.epoch = diffusion_experiment.epoch
 
-        utils.print_color(f"Load From {self.epoch=}", c="y")
+        print_color(f"Load From {self.epoch=}", c="y")
 
         self.setup_general()
         self.dataset_config = args_train.dataset_config
@@ -145,16 +160,16 @@ class TrajectoryStitchingMazePlanner:
 
     def setup_general(self):
         """general stuff for both types of setup"""
-        utils.mkdir(self.savepath)
+        mkdir(self.savepath)
         self.savepath_root = self.savepath
         self.load_ev_problems()
 
     def load_ev_problems(self):
         ## Oct 21: get the file name and load the dict out
-        self.problems_h5path = utils.get_trajectory_stitching_eval_problem_path(
+        self.problems_h5path = get_trajectory_stitching_eval_problem_path(
             self.env.name
         )
-        self.problems_dict = utils.load_trajectory_stitching_eval_problems(
+        self.problems_dict = load_trajectory_stitching_eval_problems(
             h5path=self.problems_h5path
         )
         # pdb.set_trace()
@@ -169,14 +184,14 @@ class TrajectoryStitchingMazePlanner:
         given_probs: dict to specify start/goal, len is ??
         """
         if pl_seed is not None:
-            utils.set_seed(pl_seed)  ## seed everything
+            set_seed(pl_seed)  ## seed everything
         if given_probs is not None:  # if given, just evaluate the given states
             num_ep = len(given_probs)
         else:
             num_probs = len(self.problems_dict["start_state"])
             num_ep = num_probs if self.plan_n_ep == -100 else self.plan_n_ep
 
-        utils.print_color(f"[plan_once_parallel]: {num_ep=}")
+        print_color(f"[plan_once_parallel]: {num_ep=}")
 
         ep_scores = []
         ep_total_rewards = []
@@ -328,12 +343,12 @@ class TrajectoryStitchingMazePlanner:
                         np.concatenate([rows_act[i_r], rows_obs[i_r]], axis=0)
                     )  # 2H,W,C
                 img_whole = np.concatenate(img_whole)
-                utils.save_img(f_path_3, img_whole)
+                save_img(f_path_3, img_whole)
 
         ## ----------------------------------------------------------------
         ## ------------------ Finish All Eval Episodes --------------------
 
-        utils.print_color(
+        print_color(
             self.env.name,
         )
 
@@ -389,13 +404,13 @@ class TrajectoryStitchingMazePlanner:
             ]
         )
 
-        utils.save_json(json_data, json_path)
+        save_json(json_data, json_path)
 
         # print(f'[save_plan_result]: save to {json_path}')
         new_savepath = f"{self.savepath.rstrip(os.sep)}-sc{int(avg_ep_scores)}/"
-        utils.rename_fn(self.savepath, new_savepath)
+        rename_fn(self.savepath, new_savepath)
         new_json_path = json_path.replace(self.savepath, new_savepath)
-        utils.print_color(
+        print_color(
             f"new_json_path: {new_json_path} \n",
         )
 
@@ -506,7 +521,7 @@ class TrajectoryStitchingMazePlanner:
         assert Is_Gym_Robot_Env
 
         if pl_seed is not None:
-            utils.set_seed(pl_seed)  ## seed everything
+            set_seed(pl_seed)  ## seed everything
 
         # pdb.set_trace()
 
@@ -516,7 +531,7 @@ class TrajectoryStitchingMazePlanner:
             num_probs = len(self.problems_dict["start_state"])
             num_ep = num_probs if self.plan_n_ep == -100 else self.plan_n_ep
 
-        utils.print_color(f"[ben_plan_once_parallel]: {num_ep=}")
+        print_color(f"[ben_plan_once_parallel]: {num_ep=}")
 
         ep_scores = []
         ep_total_rewards = []
@@ -543,10 +558,10 @@ class TrajectoryStitchingMazePlanner:
                 gl_pos_acc = self.problems_dict["goal_pos"][i_ep:tmp_last_p_idx]
 
                 ## we need to make the cell-idx level state into mujoco coordinate level first
-                input_st_acc = utils.ben_luo_rowcol_to_xy(
+                input_st_acc = ben_luo_rowcol_to_xy(
                     self.dset_type, trajs=input_st_acc
                 )
-                gl_pos_acc = utils.ben_luo_rowcol_to_xy(
+                gl_pos_acc = ben_luo_rowcol_to_xy(
                     self.dset_type, trajs=gl_pos_acc
                 )
                 # pdb.set_trace()
@@ -612,9 +627,9 @@ class TrajectoryStitchingMazePlanner:
             )
 
             ## for vis, we need to transform to cell-idx coordinate
-            pick_tj_ep = utils.ben_xy_to_luo_rowcol(self.dset_type, pick_tj_ep)
+            pick_tj_ep = ben_xy_to_luo_rowcol(self.dset_type, pick_tj_ep)
             rollout = np.array(rollout)
-            rollout[:, :2] = utils.ben_xy_to_luo_rowcol(self.dset_type, rollout[:, :2])
+            rollout[:, :2] = ben_xy_to_luo_rowcol(self.dset_type, rollout[:, :2])
             # pdb.set_trace() ## Oct 31
 
             ## ---------------------------------------------------
@@ -688,7 +703,7 @@ class TrajectoryStitchingMazePlanner:
                         np.concatenate([rows_act[i_r], rows_obs[i_r]], axis=0)
                     )  # 2H,W,C
                 img_whole = np.concatenate(img_whole)
-                utils.save_img(f_path_3, img_whole)
+                save_img(f_path_3, img_whole)
 
         ## ----------------------------------------------------------------
         ## ------------------ Finish All Eval Episodes --------------------
@@ -701,7 +716,7 @@ class TrajectoryStitchingMazePlanner:
                 ep_rollouts, "rout_act", targets_un=ep_targets
             )
 
-        utils.print_color(
+        print_color(
             self.env.name,
         )
 
@@ -762,13 +777,13 @@ class TrajectoryStitchingMazePlanner:
         # print(k, type(v))
         ## -------
 
-        utils.save_json(json_data, json_path)
+        save_json(json_data, json_path)
 
         # print(f'[save_plan_result]: save to {json_path}')
         new_savepath = f"{self.savepath.rstrip(os.sep)}-sr{int(ep_srate)}/"
-        utils.rename_fn(self.savepath, new_savepath)
+        rename_fn(self.savepath, new_savepath)
         new_json_path = json_path.replace(self.savepath, new_savepath)
-        utils.print_color(
+        print_color(
             f"new_json_path: {new_json_path} \n",
         )
 
@@ -790,7 +805,7 @@ class TrajectoryStitchingMazePlanner:
             )
 
             tmp_path = join(self.savepath, f"{tj_type}", f"{i_ep}_{tj_type}.png")
-            utils.save_img(save_path=tmp_path, img=tmp_img)
+            save_img(save_path=tmp_path, img=tmp_img)
 
         return
 
@@ -909,14 +924,14 @@ class TrajectoryStitchingMazePlanner:
         given_probs: dict to specify start/goal, len is ??
         """
         if pl_seed is not None:
-            utils.set_seed(pl_seed)  ## seed everything
+            set_seed(pl_seed)  ## seed everything
         if given_probs is not None:  # if given, just evaluate the given states
             num_ep = len(given_probs)
         else:
             num_probs = len(self.problems_dict["start_state"])
             num_ep = num_probs if self.plan_n_ep == -100 else self.plan_n_ep
 
-        utils.print_color(f"[plan_once]: {num_ep=}")
+        print_color(f"[plan_once]: {num_ep=}")
 
         ep_scores = []
         ep_total_rewards = []
@@ -1125,12 +1140,12 @@ class TrajectoryStitchingMazePlanner:
                         np.concatenate([rows_act[i_r], rows_obs[i_r]], axis=0)
                     )  # 2H,W,C
                 img_whole = np.concatenate(img_whole)
-                utils.save_img(f_path_3, img_whole)
+                save_img(f_path_3, img_whole)
 
         ## ----------------------------------------------------------------
         ## ------------------ Finish All Eval Episodes --------------------
 
-        utils.print_color(
+        print_color(
             self.env.name,
         )
 
@@ -1198,13 +1213,13 @@ class TrajectoryStitchingMazePlanner:
         )
         # with open(json_path, 'w') as ff:
         # json.dump(json_data, ff, indent=2,) # sort_keys=True
-        utils.save_json(json_data, json_path)
+        save_json(json_data, json_path)
 
         # print(f'[save_plan_result]: save to {json_path}')
         new_savepath = f"{self.savepath.rstrip(os.sep)}-sc{int(avg_ep_scores)}/"
-        utils.rename_fn(self.savepath, new_savepath)
+        rename_fn(self.savepath, new_savepath)
         new_json_path = json_path.replace(self.savepath, new_savepath)
-        utils.print_color(
+        print_color(
             f"new_json_path: {new_json_path} \n",
         )
 
