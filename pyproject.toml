@@ -1,6 +1,6 @@
 [build-system]
-requires = ["hatchling>=1.25.0"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "comp-diffuser"
@@ -37,8 +37,11 @@ dev = [
   "ruff>=0.11.0",
 ]
 
-[tool.hatch.build.targets.wheel]
-packages = ["src/comp_diffuser"]
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
