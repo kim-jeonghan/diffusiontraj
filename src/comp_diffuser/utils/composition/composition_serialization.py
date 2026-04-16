@@ -4,10 +4,23 @@ import pdb
 import h5py
 import numpy as np
 
-import comp_diffuser.utils as utils
-from comp_diffuser.datasets import *
-from comp_diffuser.datasets.normalization import DatasetNormalizer
-from comp_diffuser.utils.serialization import (
+from ...datasets.statistics import (
+    Ben_maze_large_Act_Max,
+    Ben_maze_large_Act_Min,
+    Ben_maze_large_Obs_Max,
+    Ben_maze_large_Obs_Min,
+    Ben_maze_Medium_Obs_Max,
+    Ben_maze_Medium_Obs_Min,
+    Ben_maze_UMaze_Obs_Max,
+    Ben_maze_UMaze_Obs_Min,
+    MAZE_Large_Act_Max,
+    MAZE_Large_Act_Min,
+    MAZE_Large_Obs_Max,
+    MAZE_Large_Obs_Min,
+)
+from ...datasets.normalization import DatasetNormalizer
+from ..eval_utils import freeze_model, print_color
+from ..serialization import (
     DiffusionExperiment,
     RandomNumberDataset,
     get_latest_epoch,
@@ -15,31 +28,35 @@ from comp_diffuser.utils.serialization import (
 )
 
 
-def load_trajectory_stitching_diffusion(*loadpath, epoch='latest', device='cuda:0', ld_config={}):
-    dataset_config = load_config(*loadpath, 'dataset_config.pkl')
-    render_config = load_config(*loadpath, 'render_config.pkl')
-    
+def load_trajectory_stitching_diffusion(
+    *loadpath, epoch="latest", device="cuda:0", ld_config={}
+):
+    dataset_config = load_config(*loadpath, "dataset_config.pkl")
+    render_config = load_config(*loadpath, "render_config.pkl")
+
     diffusion_model_loadpath = ld_config.get("diffusion_model_loadpath", None)
     if diffusion_model_loadpath:
         ### use another model, e.g., train on small trajs
-        model_config = load_config(diffusion_model_loadpath, 'model_config.pkl')
-        diffusion_model_config = load_config(diffusion_model_loadpath, 'diffusion_model.pkl')
+        model_config = load_config(diffusion_model_loadpath, "model_config.pkl")
+        diffusion_model_config = load_config(
+            diffusion_model_loadpath, "diffusion_model.pkl"
+        )
     else:
-        model_config = load_config(*loadpath, 'model_config.pkl')
-        diffusion_model_config = load_config(*loadpath, 'diffusion_model.pkl')
+        model_config = load_config(*loadpath, "model_config.pkl")
+        diffusion_model_config = load_config(*loadpath, "diffusion_model.pkl")
 
     # comp_diffusion_config = load_config(*loadpath, 'comp_diffusion.pkl')
-    sml_trainer_config = load_config(*loadpath, 'trainer_config.pkl')
+    sml_trainer_config = load_config(*loadpath, "trainer_config.pkl")
 
     ## remove absolute path for results loaded from azure
     ## @TODO : remove results folder from within trainer class
-    sml_trainer_config._dict['results_folder'] = os.path.join(*loadpath)
+    sml_trainer_config._dict["results_folder"] = os.path.join(*loadpath)
 
-    if ld_config.get('use_rand_dset', True):
+    if ld_config.get("use_rand_dset", True):
         dataset = RandomNumberDataset(size=1)
     else:
         dataset = dataset_config()
-   
+
     renderer = render_config()
     model = model_config()
     diffusion_model = diffusion_model_config(model=model)
@@ -48,34 +65,36 @@ def load_trajectory_stitching_diffusion(*loadpath, epoch='latest', device='cuda:
 
     # from comp_diffuser.models.compositional_diffusion.comp_training_v1 import Comp_Trainer_v1
     # trainer: Comp_Trainer_v1
-    trainer = sml_trainer_config(diffusion_model=diffusion_model, 
-                              dataset=dataset, 
-                              renderer=renderer,
-                              )
+    trainer = sml_trainer_config(
+        diffusion_model=diffusion_model,
+        dataset=dataset,
+        renderer=renderer,
+    )
 
-
-    if epoch == 'latest':
+    if epoch == "latest":
         epoch = get_latest_epoch(loadpath)
 
-    print(f'\n[ utils/serialization ] Loading model epoch: {epoch}\n')
+    print(f"\n[ utils/serialization ] Loading model epoch: {epoch}\n")
 
     if diffusion_model_loadpath:
         # pdb.set_trace()
-        epoch = get_latest_epoch(  diffusion_model_loadpath.split('/')  )
+        epoch = get_latest_epoch(diffusion_model_loadpath.split("/"))
         trainer.load_from_small(epoch, sm_logdir=diffusion_model_loadpath)
-        from comp_diffuser.utils import print_color
-        print_color(f'\n\n[Load from Another] {diffusion_model_loadpath}\n\n',)
+        print_color(
+            f"\n\n[Load from Another] {diffusion_model_loadpath}\n\n",
+        )
 
     else:
         trainer.load(epoch)
-    
+
     ## dataset renderer model diffusion_model comp_diffusion ema trainer epoch'
-    utils.freeze_model(model)
-    utils.freeze_model(diffusion_model)
-    utils.freeze_model(trainer.ema_model)
+    freeze_model(model)
+    freeze_model(diffusion_model)
+    freeze_model(trainer.ema_model)
 
-
-    return DiffusionExperiment(dataset, renderer, model, diffusion_model, trainer.ema_model, trainer, epoch)
+    return DiffusionExperiment(
+        dataset, renderer, model, diffusion_model, trainer.ema_model, trainer, epoch
+    )
 
 
 def get_trajectory_stitching_eval_problem_path(env_name):
@@ -84,14 +103,14 @@ def get_trajectory_stitching_eval_problem_path(env_name):
     """
     hdf5_path = None
     # pdb.set_trace()
-    if env_name == 'maze2d-large-v1':
+    if env_name == "maze2d-large-v1":
         hdf5_path = "data/eval_problems/maze2d_lg_ev_prob_bt2way_nppp3_rprange02.hdf5"
-    elif env_name == 'PointMaze_Large-v3': ## Ben
+    elif env_name == "PointMaze_Large-v3":  ## Ben
         ## Oct 29
         hdf5_path = "data/smoke/ev_probs/ben/ben_maze2d_lg_ev_prob_numEp10_eSdSt0.hdf5"
-    elif env_name == 'PointMaze_Medium-v3':
+    elif env_name == "PointMaze_Medium-v3":
         hdf5_path = "data/smoke/ev_probs/ben/ben_maze2d_Me_ev_prob_numEp10_eSdSt0.hdf5"
-    elif env_name == 'PointMaze_UMaze-v3':
+    elif env_name == "PointMaze_UMaze-v3":
         hdf5_path = "data/smoke/ev_probs/ben/ben_maze2d_Umz_ev_prob_numEp10_eSdSt0.hdf5"
     else:
         raise NotImplementedError
@@ -101,79 +120,90 @@ def get_trajectory_stitching_eval_problem_path(env_name):
 
 def load_trajectory_stitching_eval_problems(h5path):
     data_dict = {}
-    with h5py.File(h5path, 'r') as dataset_file:
+    with h5py.File(h5path, "r") as dataset_file:
         for k in dataset_file.keys():
             try:  # first try loading as an array
                 data_dict[k] = dataset_file[k][:]
             except ValueError:  # try loading as a scalar
                 data_dict[k] = dataset_file[k][()]
-        from comp_diffuser.utils import print_color
-        print_color(f'[load ev probs] {data_dict.keys()=}')
-    
+        print_color(f"[load ev probs] {data_dict.keys()=}")
+
     return data_dict
 
 
-
-def load_trajectory_stitching_dataset_normalizer(args_train,):
-    '''
+def load_trajectory_stitching_dataset_normalizer(
+    args_train,
+):
+    """
     Directly create a normalizer with given value, so no need to load the dataset, which is slow.
     Returns:
         normalizer: a class
-    '''
-    assert type(args_train.normalizer) == str
+    """
+    assert isinstance(args_train.normalizer, str)
     # is_kuka = 'kuka' in train_env_list.name # hasattr(train_env_list, 'robot_env')
     normalizer = eval(args_train.normalizer)
-    
+
     # ------------------- load from abc, can be extracted -------------------
     data_dict = {}
-    dset_type = args_train.dataset_config.get('dset_type', 'ours')
-
+    dset_type = args_train.dataset_config.get("dset_type", "ours")
 
     if args_train.dataset == "maze2d-large-v1":
-        if dset_type == 'ours':
-            data_dict['actions'] = np.array([MAZE_Large_Act_Min, MAZE_Large_Act_Max], dtype=np.float32)
-            data_dict['observations'] = np.array([MAZE_Large_Obs_Min, MAZE_Large_Obs_Max], dtype=np.float32)
-        elif dset_type == 'bens_pm_large':
-            data_dict['actions'] = np.array([Ben_maze_large_Act_Min, Ben_maze_large_Act_Max], dtype=np.float32)
-            data_dict['observations'] = np.array([Ben_maze_large_Obs_Min, Ben_maze_large_Obs_Max], dtype=np.float32)
-
+        if dset_type == "ours":
+            data_dict["actions"] = np.array(
+                [MAZE_Large_Act_Min, MAZE_Large_Act_Max], dtype=np.float32
+            )
+            data_dict["observations"] = np.array(
+                [MAZE_Large_Obs_Min, MAZE_Large_Obs_Max], dtype=np.float32
+            )
+        elif dset_type == "bens_pm_large":
+            data_dict["actions"] = np.array(
+                [Ben_maze_large_Act_Min, Ben_maze_large_Act_Max], dtype=np.float32
+            )
+            data_dict["observations"] = np.array(
+                [Ben_maze_large_Obs_Min, Ben_maze_large_Obs_Max], dtype=np.float32
+            )
 
         else:
             raise NotImplementedError
     elif args_train.dataset == "maze2d-medium-v1":
 
-        if dset_type == 'bens_pm_medium':
-            data_dict['actions'] = np.array([Ben_maze_large_Act_Min, 
-                                             Ben_maze_large_Act_Max], dtype=np.float32)
-            data_dict['observations'] = np.array([Ben_maze_Medium_Obs_Min, 
-                                                  Ben_maze_Medium_Obs_Max], dtype=np.float32)
+        if dset_type == "bens_pm_medium":
+            data_dict["actions"] = np.array(
+                [Ben_maze_large_Act_Min, Ben_maze_large_Act_Max], dtype=np.float32
+            )
+            data_dict["observations"] = np.array(
+                [Ben_maze_Medium_Obs_Min, Ben_maze_Medium_Obs_Max], dtype=np.float32
+            )
         else:
             raise NotImplementedError
-
 
     elif args_train.dataset == "maze2d-umaze-v1":
-        if dset_type == 'bens_pm_umaze':
-            data_dict['actions'] = np.array([Ben_maze_large_Act_Min, 
-                                             Ben_maze_large_Act_Max], dtype=np.float32)
-            data_dict['observations'] = np.array([Ben_maze_UMaze_Obs_Min, 
-                                                  Ben_maze_UMaze_Obs_Max], dtype=np.float32)
+        if dset_type == "bens_pm_umaze":
+            data_dict["actions"] = np.array(
+                [Ben_maze_large_Act_Min, Ben_maze_large_Act_Max], dtype=np.float32
+            )
+            data_dict["observations"] = np.array(
+                [Ben_maze_UMaze_Obs_Min, Ben_maze_UMaze_Obs_Max], dtype=np.float32
+            )
         else:
             raise NotImplementedError
-
-
 
     ## TODO: Add normalizer for other mazes
     else:
-        assert False, 'to be implemented'
+        assert False, "to be implemented"
 
-    norm_const_dict = args_train.dataset_config.get('norm_const_dict', False)
+    norm_const_dict = args_train.dataset_config.get("norm_const_dict", False)
     if norm_const_dict:
-        assert np.isclose(data_dict['actions'], np.array(norm_const_dict['actions'], dtype=np.float32)).all()
-        data_dict['observations'] = np.array(norm_const_dict['observations'], dtype=np.float32)
-        pdb.set_trace() ## should be good, just stop for checking
+        assert np.isclose(
+            data_dict["actions"], np.array(norm_const_dict["actions"], dtype=np.float32)
+        ).all()
+        data_dict["observations"] = np.array(
+            norm_const_dict["observations"], dtype=np.float32
+        )
+        pdb.set_trace()  ## should be good, just stop for checking
     # -------------------
     else:
-        print('args_train: no norm_const_dict.')
+        print("args_train: no norm_const_dict.")
 
     d_norm = DatasetNormalizer(data_dict, normalizer, eval_solo=True, path_lengths=None)
 
@@ -181,31 +211,33 @@ def load_trajectory_stitching_dataset_normalizer(args_train,):
 
     return d_norm
 
-    
-        
+
+##### ---------- cd sml version ------------
 
 
-##### ---------- cd sml version ------------ 
+def load_compositional_diffusion(
+    *loadpath, epoch="latest", device="cuda:0", ld_config={}
+):
+    dataset_config = load_config(*loadpath, "dataset_config.pkl")
+    render_config = load_config(*loadpath, "render_config.pkl")
 
-def load_compositional_diffusion(*loadpath, epoch='latest', device='cuda:0', ld_config={}):
-    dataset_config = load_config(*loadpath, 'dataset_config.pkl')
-    render_config = load_config(*loadpath, 'render_config.pkl')
-    
     diffusion_model_loadpath = ld_config.get("diffusion_model_loadpath", None)
     if diffusion_model_loadpath:
         ### use another model, e.g., train on small trajs
-        model_config = load_config(diffusion_model_loadpath, 'model_config.pkl')
-        diffusion_model_config = load_config(diffusion_model_loadpath, 'diffusion_model.pkl')
+        model_config = load_config(diffusion_model_loadpath, "model_config.pkl")
+        diffusion_model_config = load_config(
+            diffusion_model_loadpath, "diffusion_model.pkl"
+        )
     else:
-        model_config = load_config(*loadpath, 'model_config.pkl')
-        diffusion_model_config = load_config(*loadpath, 'diffusion_model.pkl')
+        model_config = load_config(*loadpath, "model_config.pkl")
+        diffusion_model_config = load_config(*loadpath, "diffusion_model.pkl")
 
     # comp_diffusion_config = load_config(*loadpath, 'comp_diffusion.pkl')
-    sml_trainer_config = load_config(*loadpath, 'trainer_config.pkl')
+    sml_trainer_config = load_config(*loadpath, "trainer_config.pkl")
 
     ## remove absolute path for results loaded from azure
     ## @TODO : remove results folder from within trainer class
-    sml_trainer_config._dict['results_folder'] = os.path.join(*loadpath)
+    sml_trainer_config._dict["results_folder"] = os.path.join(*loadpath)
 
     dataset = dataset_config()
     # dataset = RandomNumberDataset(size=1)
@@ -217,28 +249,30 @@ def load_compositional_diffusion(*loadpath, epoch='latest', device='cuda:0', ld_
 
     # from comp_diffuser.models.compositional_diffusion.comp_training_v1 import Comp_Trainer_v1
     # trainer: Comp_Trainer_v1
-    trainer = sml_trainer_config(diffusion_model=diffusion_model, 
-                              dataset=dataset, 
-                              renderer=renderer,
-                              )
+    trainer = sml_trainer_config(
+        diffusion_model=diffusion_model,
+        dataset=dataset,
+        renderer=renderer,
+    )
 
-
-    if epoch == 'latest':
+    if epoch == "latest":
         epoch = get_latest_epoch(loadpath)
 
-    print(f'\n[ utils/serialization ] Loading model epoch: {epoch}\n')
+    print(f"\n[ utils/serialization ] Loading model epoch: {epoch}\n")
 
     if diffusion_model_loadpath:
         # pdb.set_trace()
-        epoch = get_latest_epoch(  diffusion_model_loadpath.split('/')  )
+        epoch = get_latest_epoch(diffusion_model_loadpath.split("/"))
         trainer.load_from_small(epoch, sm_logdir=diffusion_model_loadpath)
-        from comp_diffuser.utils import print_color
-        print_color(f'\n\n[Load from Another] {diffusion_model_loadpath}\n\n',)
+        print_color(
+            f"\n\n[Load from Another] {diffusion_model_loadpath}\n\n",
+        )
 
     else:
         trainer.load(epoch)
-    
+
     ## dataset renderer model diffusion_model comp_diffusion ema trainer epoch'
 
-    return DiffusionExperiment(dataset, renderer, model, diffusion_model, trainer.ema_model, trainer, epoch)
-
+    return DiffusionExperiment(
+        dataset, renderer, model, diffusion_model, trainer.ema_model, trainer, epoch
+    )

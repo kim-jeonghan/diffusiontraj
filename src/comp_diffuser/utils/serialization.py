@@ -5,12 +5,14 @@ from collections import namedtuple
 
 import torch
 
-DiffusionExperiment = namedtuple('Diffusion', 'dataset renderer model diffusion ema trainer epoch')
+DiffusionExperiment = namedtuple(
+    "Diffusion", "dataset renderer model diffusion ema trainer epoch"
+)
 
 
 def mkdir(savepath):
     """
-        returns `True` iff `savepath` is created
+    returns `True` iff `savepath` is created
     """
     if not os.path.exists(savepath):
         os.makedirs(savepath)
@@ -18,39 +20,43 @@ def mkdir(savepath):
     else:
         return False
 
+
 def get_latest_epoch(loadpath):
-    states = glob.glob1(os.path.join(*loadpath), 'state_*')
+    states = glob.glob1(os.path.join(*loadpath), "state_*")
     latest_epoch = -1
     for state in states:
-        epoch = int(state.replace('state_', '').replace('.pt', ''))
+        epoch = int(state.replace("state_", "").replace(".pt", ""))
         latest_epoch = max(epoch, latest_epoch)
     return latest_epoch
 
+
 def load_config(*loadpath):
     loadpath = os.path.join(*loadpath)
-    config = pickle.load(open(loadpath, 'rb'))
-    print(f'[ utils/serialization ] Loaded config from {loadpath}')
+    config = pickle.load(open(loadpath, "rb"))
+    print(f"[ utils/serialization ] Loaded config from {loadpath}")
     print(config)
     return config
 
-def load_diffusion(*loadpath, epoch='latest', device='cuda:0', ld_config={}):
-    dataset_config = load_config(*loadpath, 'dataset_config.pkl')
-    render_config = load_config(*loadpath, 'render_config.pkl')
-    model_config = load_config(*loadpath, 'model_config.pkl')
-    diffusion_config = load_config(*loadpath, 'diffusion_config.pkl')
-    trainer_config = load_config(*loadpath, 'trainer_config.pkl')
+
+def load_diffusion(*loadpath, epoch="latest", device="cuda:0", ld_config={}):
+    dataset_config = load_config(*loadpath, "dataset_config.pkl")
+    render_config = load_config(*loadpath, "render_config.pkl")
+    model_config = load_config(*loadpath, "model_config.pkl")
+    diffusion_config = load_config(*loadpath, "diffusion_config.pkl")
+    trainer_config = load_config(*loadpath, "trainer_config.pkl")
 
     ## remove absolute path for results loaded from azure
     ## @TODO : remove results folder from within trainer class
-    trainer_config._dict['results_folder'] = os.path.join(*loadpath)
+    trainer_config._dict["results_folder"] = os.path.join(*loadpath)
 
-    if ld_config.get('use_rand_dset', False):
+    if ld_config.get("use_rand_dset", False):
         dataset = RandomNumberDataset(size=1)
     else:
         dataset = dataset_config()
-    
-    if ld_config.get('use_rd_v2', False):
-        from comp_diffuser.rendering.maze_renderer import Maze2DRenderer
+
+    if ld_config.get("use_rd_v2", False):
+        from ..rendering.maze_renderer import Maze2DRenderer
+
         render_config._class = Maze2DRenderer
     # pdb.set_trace()
 
@@ -59,46 +65,57 @@ def load_diffusion(*loadpath, epoch='latest', device='cuda:0', ld_config={}):
     diffusion = diffusion_config(model)
     trainer = trainer_config(diffusion, dataset, renderer)
 
-    if epoch == 'latest':
+    if epoch == "latest":
         epoch = get_latest_epoch(loadpath)
 
-    print(f'\n[ utils/serialization ] Loading model epoch: {epoch}\n')
+    print(f"\n[ utils/serialization ] Loading model epoch: {epoch}\n")
 
     trainer.load(epoch)
 
-    return DiffusionExperiment(dataset, renderer, model, diffusion, trainer.ema_model, trainer, epoch)
+    return DiffusionExperiment(
+        dataset, renderer, model, diffusion, trainer.ema_model, trainer, epoch
+    )
+
 
 import numpy as np
 
-from comp_diffuser.datasets.normalization import DatasetNormalizer
+from ..datasets.normalization import DatasetNormalizer
 
 
-def load_comp_datasetNormalizer(args_train, ):
-    ''' h5path: path to train dataset
+def load_comp_datasetNormalizer(
+    args_train,
+):
+    """h5path: path to train dataset
     normalizer: a class
-    '''
-    assert type(args_train.normalizer) == str
+    """
+    assert isinstance(args_train.normalizer, str)
     # is_kuka = 'kuka' in train_env_list.name # hasattr(train_env_list, 'robot_env')
     normalizer = eval(args_train.normalizer)
-    
+
     # ------------------- load from abc, can be extracted -------------------
-    norm_const_dict = args_train.dataset_config.get('norm_const_dict', False)
+    norm_const_dict = args_train.dataset_config.get("norm_const_dict", False)
     if norm_const_dict:
         data_dict = {}
         # data_dict['actions'] = np.array([[-1,-1], [1,1]], dtype=np.float32)
-        data_dict['actions'] = np.array(norm_const_dict['actions'], dtype=np.float32)
-        data_dict['observations'] = np.array(norm_const_dict['observations'], dtype=np.float32)
+        data_dict["actions"] = np.array(norm_const_dict["actions"], dtype=np.float32)
+        data_dict["observations"] = np.array(
+            norm_const_dict["observations"], dtype=np.float32
+        )
         # pdb.set_trace()
-        d_norm = DatasetNormalizer(data_dict, normalizer, eval_solo=True, path_lengths=None)
+        d_norm = DatasetNormalizer(
+            data_dict, normalizer, eval_solo=True, path_lengths=None
+        )
         return d_norm
     # -------------------
     else:
         assert False
 
+
 class RandomNumberDataset(torch.utils.data.Dataset):
-    '''
+    """
     a placeholder dataset
-    '''
+    """
+
     def __init__(self, size):
         self.size = size
         self.data = torch.rand(size)

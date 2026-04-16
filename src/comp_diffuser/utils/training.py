@@ -1,21 +1,25 @@
-
 # from .cloud import sync_logs
+
 
 def cycle(dl):
     while True:
         for data in dl:
             yield data
 
-class EMA():
-    '''
-        empirical moving average
-    '''
+
+class EMA:
+    """
+    empirical moving average
+    """
+
     def __init__(self, beta):
         super().__init__()
         self.beta = beta
 
     def update_model_average(self, ma_model, current_model):
-        for current_params, ma_params in zip(current_model.parameters(), ma_model.parameters()):
+        for current_params, ma_params in zip(
+            current_model.parameters(), ma_model.parameters()
+        ):
             old_weight, up_weight = ma_params.data, current_params.data
             ma_params.data = self.update_average(old_weight, up_weight)
 
@@ -23,6 +27,7 @@ class EMA():
         if old is None:
             return new
         return old * self.beta + (1 - self.beta) * new
+
 
 # class Trainer(object):
 #     def __init__(
@@ -122,7 +127,7 @@ class EMA():
 #                 # pdb.set_trace()
 #                 ## save to online
 #                 metrics = {k:v.detach().item() for k, v in infos.items()}
-                
+
 #                 metrics['train/it'] = self.step
 #                 metrics['train/loss'] = loss.detach().item()
 #                 metrics['train/lr'] = get_lr(self.optimizer)
@@ -250,7 +255,7 @@ class EMA():
 
 #             sample_savedir = self.get_sample_savedir(self.step)
 #             self.debug_mode = False
-            
+
 #             if self.debug_mode:
 #                 sample_savedir = os.path.join(self.logdir, f'debug-vis')
 #                 if not os.path.isdir(sample_savedir):
@@ -269,4 +274,3 @@ class EMA():
 #         if not os.path.isdir(sample_savedir):
 #             os.makedirs(sample_savedir)
 #         return sample_savedir
-
