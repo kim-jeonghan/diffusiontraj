@@ -4,6 +4,7 @@ import pdb
 import h5py
 import numpy as np
 
+from ...datasets.normalization import DatasetNormalizer
 from ...datasets.statistics import (
     Ben_maze_large_Act_Max,
     Ben_maze_large_Act_Min,
@@ -18,7 +19,6 @@ from ...datasets.statistics import (
     MAZE_Large_Obs_Max,
     MAZE_Large_Obs_Min,
 )
-from ...datasets.normalization import DatasetNormalizer
 from ..eval_utils import freeze_model, print_color
 from ..serialization import (
     DiffusionExperiment,

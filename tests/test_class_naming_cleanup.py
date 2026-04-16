@@ -1,7 +1,5 @@
 import torch
 
-from comp_diffuser.planners.trajectory_blender import TrajBlender
-from comp_diffuser.planners.inverse_dynamics_policy import PolicyInvDyn
 from comp_diffuser.models.helpers import (
     Conv1dBlockDd,
     WeightedLossL2InvDynV3,
@@ -13,6 +11,8 @@ from comp_diffuser.models.hi_helpers import (
     MlpInvDynV2,
     SinusoidalPosEmb2D,
 )
+from comp_diffuser.planners.inverse_dynamics_policy import PolicyInvDyn
+from comp_diffuser.planners.trajectory_blender import TrajBlender
 
 
 def test_public_class_names_follow_capwords():

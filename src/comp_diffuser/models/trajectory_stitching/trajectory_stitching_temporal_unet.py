@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 
 import comp_diffuser.utils as utils
+
 from ..conditional_diffusion.residual_temporal_block import ResidualTemporalBlock
 from ..conditional_diffusion.trajectory_time_encoder import TrajectoryTimeEncoder
 from ..helpers import (

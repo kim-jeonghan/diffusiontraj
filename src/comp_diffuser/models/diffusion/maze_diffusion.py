@@ -5,6 +5,7 @@ import torch
 from torch import nn
 
 import comp_diffuser.utils as utils
+
 from ..common.model_outputs import ModelPrediction
 from ..helpers import (
     Losses,

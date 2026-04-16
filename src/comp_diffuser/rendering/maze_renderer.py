@@ -3,7 +3,7 @@ import imageio
 import numpy as np
 
 from ..datasets.d4rl import Is_Gym_Robot_Env, load_env_gym_robo, load_environment
-import comp_diffuser.utils as utils
+from ..utils.composition.maze_utils import pad_traj2d_list
 from .render_utils import make_traj_images
 
 
@@ -57,7 +57,7 @@ class Maze2DRenderer:
                 len(obs_trajs) >= 2
             ):  ## and obs_trajs[0].shape[0] != obs_trajs[1].shape[0]:
                 ## padding to the max len and convert to np
-                obs_trajs = np.array(utils.pad_traj2d_list(obs_trajs))
+                obs_trajs = np.array(pad_traj2d_list(obs_trajs))
                 # pdb.set_trace()
             else:
                 obs_trajs = np.array(obs_trajs)

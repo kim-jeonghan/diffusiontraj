@@ -6,17 +6,16 @@ import h5py
 import numpy as np
 import torch
 import yaml
-from tap import Tap
-
-import comp_diffuser.utils as utils
-
-warnings.simplefilter("always", ResourceWarning)  # Show all resource warnings
-
 from maze2d_eval_problem_utils import (
     m2d_rand_sample_probs,
     merge_prob_dicts,
 )
 from maze2d_planning_constants import m2d_get_bottom_top_rows
+from tap import Tap
+
+from comp_diffuser.utils.eval_utils import print_color
+
+warnings.simplefilter("always", ResourceWarning)  # Show all resource warnings
 
 
 class ArgsParser(Tap):
@@ -47,7 +46,7 @@ def main():
 
     ## do we actually need to init an env?
     # env = gym.make(rs_cfg['el_name'],) #  gen_data=True)
-    utils.print_color(f"el_name: {el_name}")
+    print_color(f"el_name: {el_name}")
     prob_dicts = []
     if rs_cfg["prob_type"] == "bottom_top_2way":
         ## np2d (n_valid_cell, 2)
@@ -79,8 +78,6 @@ def main():
     h5_root = "/coc/flash7/yluo470/robot2024/hi_src/comp_diffuser/data/smoke/ev_probs"
     h5_save_path = f"{h5_root}/{args.sub_conf}.hdf5"
     # pdb.set_trace()
-    num_probs = all_prob_dict["start_state"].shape[0]
-
     ## ----------------------------------
     ## Finished all, save to hdf5
     with h5py.File(h5_save_path, "w") as file:
@@ -93,7 +90,7 @@ def main():
     ## lock file
     if "smoke" not in args.sub_conf:
         os.chmod(h5_save_path, 0o444)
-    utils.print_color(f"[save to] {h5_save_path=}")
+    print_color(f"[save to] {h5_save_path=}")
 
 
 if __name__ == "__main__":

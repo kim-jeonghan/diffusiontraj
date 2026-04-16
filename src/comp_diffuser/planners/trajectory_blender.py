@@ -1,11 +1,11 @@
 import numpy as np
 
-import comp_diffuser.utils as utils
-
 from ..datasets.normalization import DatasetNormalizer
 from ..models.trajectory_stitching import (
     TrajectoryStitchingGaussianDiffusionWithInverseDynamics,
 )
+from ..utils.composition.trajectory_ranking import get_np_trajs_list
+from ..utils.eval_utils import print_color
 
 
 class TrajBlender:
@@ -33,7 +33,7 @@ class TrajBlender:
             - trajs_out: a list of [tot_hzn, dim]
         """
         ## to np and unnorm
-        trajs_list = utils.get_np_trajs_list(
+        trajs_list = get_np_trajs_list(
             trajs_list, do_unnorm=do_unnorm, normalizer=self.normalizer
         )
 
@@ -76,7 +76,7 @@ class TrajBlender:
                 trajs_out[:, tmp_idx_1:tmp_idx_2, :] = tjs_p_i[:, self.len_ovlp :, :]
 
             cnt_v[:, tmp_idx_1:tmp_idx_2, :] += 1
-            utils.print_color(f"{i_c=} {tmp_idx_1=}, {tmp_idx_2=}, {tot_hzn=}")
+            print_color(f"{i_c=} {tmp_idx_1=}, {tmp_idx_2=}, {tot_hzn=}")
 
         ## handle and merge the ovlp parts
         for i_c in range(n_comp - 1):
@@ -98,7 +98,7 @@ class TrajBlender:
             trajs_out[:, tmp_idx_1:tmp_idx_2, :] = trajs_blend
             cnt_v[:, tmp_idx_1:tmp_idx_2, :] += 1
 
-            utils.print_color(f"{i_c=} {tmp_idx_1=}, {tmp_idx_2=}")
+            print_color(f"{i_c=} {tmp_idx_1=}, {tmp_idx_2=}")
         assert tmp_idx_2 == (tot_hzn - self.hzn_step_size)
 
         assert (cnt_v == 1).all()

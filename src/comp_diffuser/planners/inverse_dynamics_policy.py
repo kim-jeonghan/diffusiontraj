@@ -3,7 +3,7 @@ from collections import namedtuple
 import einops
 import torch
 
-import comp_diffuser.utils as utils
+from ..utils.arrays import apply_dict, to_np, to_torch
 
 InverseDynamicsTrajectories = namedtuple("Trajectories", "actions observations")
 # GuidedTrajectories = namedtuple('GuidedTrajectories', 'actions observations value')
@@ -22,13 +22,13 @@ class PolicyInvDyn:
         return parameters[0].device
 
     def _format_conditions(self, conditions, batch_size):
-        conditions = utils.apply_dict(
+        conditions = apply_dict(
             self.normalizer.normalize,
             conditions,
             "observations",
         )
-        conditions = utils.to_torch(conditions, dtype=torch.float32, device="cuda:0")
-        conditions = utils.apply_dict(
+        conditions = to_torch(conditions, dtype=torch.float32, device="cuda:0")
+        conditions = apply_dict(
             einops.repeat,
             conditions,
             "d -> repeat d",
@@ -53,8 +53,8 @@ class PolicyInvDyn:
         actions_flat = self.diffusion_model.inv_model(obs_flat)
         # pdb.set_trace()
         actions = einops.rearrange(actions_flat, "(b h) d -> b h d", b=sample.shape[0])
-        sample = utils.to_np(sample)
-        actions = utils.to_np(actions)
+        sample = to_np(sample)
+        actions = to_np(actions)
 
         # pdb.set_trace()
 

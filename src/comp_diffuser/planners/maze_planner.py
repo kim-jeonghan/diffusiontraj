@@ -5,9 +5,10 @@ from os.path import join
 
 import numpy as np
 
+import comp_diffuser.utils as utils
+
 from ..datasets import datasets as datasets
 from ..guides.policies_invdyn import Policy_InvDyn
-import comp_diffuser.utils as utils
 
 """partially adapted from d4rl: scripts/reference_scores/maze2d_controller.py"""
 

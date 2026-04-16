@@ -3,8 +3,7 @@ from collections import namedtuple
 import numpy as np
 import torch
 
-import comp_diffuser.utils as utils
-
+from ...utils.eval_utils import print_color
 from ..buffer import ReplayBuffer
 from ..d4rl import load_environment
 from ..normalization import DatasetNormalizer
@@ -83,7 +82,7 @@ class CompositionalSequenceDataset(torch.utils.data.Dataset):
 
         if norm_const_dict and "smoke" not in str(dset_h5path):
             for k_name in ["actions", "observations"]:
-                utils.print_color(f"{k_name=}")
+                print_color(f"{k_name=}")
                 print(self.normalizer.normalizers[k_name].mins)
                 print(self.normalizer.normalizers[k_name].maxs)
                 # pdb.set_trace()
@@ -99,7 +98,7 @@ class CompositionalSequenceDataset(torch.utils.data.Dataset):
                 ).all()
 
         print(fields)
-        utils.print_color(f"Dataset Len: {len(self.indices)}", c="y")
+        print_color(f"Dataset Len: {len(self.indices)}", c="y")
         # shapes = {key: val.shape for key, val in self.fields.items()}
         # print(f'[ datasets/mujoco ] Dataset fields: {shapes}')
 

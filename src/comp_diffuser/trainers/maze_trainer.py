@@ -8,8 +8,8 @@ import wandb
 # from comp_diffuser.models.diffusion import GaussianDiffusion
 from ..models.diffusion.maze_diffusion import MazeGaussianDiffusionWithInverseDynamics
 from ..models.helpers import apply_conditioning
-import comp_diffuser.utils as utils
-from ..utils.arrays import apply_dict, to_device, to_np
+from ..utils.arrays import apply_dict, to_device, to_device_tp, to_np
+from ..utils.eval_utils import print_color
 from ..utils.timer import Timer
 from ..utils.train_utils import get_lr
 from ..utils.training import EMA, cycle
@@ -102,7 +102,7 @@ class MazeTrainer(object):
                 # pdb.set_trace()
 
                 # batch = batch_to_device(batch)
-                obs_trajs, act_trajs, boundary_conditions = utils.to_device_tp(
+                obs_trajs, act_trajs, boundary_conditions = to_device_tp(
                     *batch, device=self.device
                 )
 
@@ -171,7 +171,7 @@ class MazeTrainer(object):
         }
         savepath = os.path.join(self.logdir, f"state_{epoch}.pt")
         torch.save(data, savepath)
-        utils.print_color(f"[ utils/training ] Saved model to {savepath}", c="y")
+        print_color(f"[ utils/training ] Saved model to {savepath}", c="y")
 
     def load4resume(self, loadpath):
         ## Dec 26

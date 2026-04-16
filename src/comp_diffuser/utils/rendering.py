@@ -151,7 +151,7 @@ class MuJoCoRenderer:
         conditions=None,
     ):
 
-        if type(dim) == int:
+        if isinstance(dim, int):
             dim = (dim, dim)
 
         if self.viewer is None:

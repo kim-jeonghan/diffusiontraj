@@ -1,13 +1,15 @@
+import numpy as np
 import torch
 import wandb
 
-import comp_diffuser.utils as utils
-
-torch.backends.cudnn.benchmark = True
-torch.set_printoptions(precision=4, sci_mode=False)
-import numpy as np
+from comp_diffuser.trainers.maze_trainer import MazeTrainer
+from comp_diffuser.utils.arrays import batch_copy, batchify, report_parameters
+from comp_diffuser.utils.config import Config
+from comp_diffuser.utils.setup import ArgsParser as BaseArgsParser
 
 np.set_printoptions(precision=3, suppress=True)
+torch.backends.cudnn.benchmark = True
+torch.set_printoptions(precision=4, sci_mode=False)
 
 
 # -----------------------------------------------------------------------------#
@@ -15,7 +17,7 @@ np.set_printoptions(precision=3, suppress=True)
 # -----------------------------------------------------------------------------#
 
 
-class ArgsParser(utils.ArgsParser):
+class ArgsParser(BaseArgsParser):
     dataset: str = None
     config: str
 
@@ -29,7 +31,7 @@ args = ArgsParser().parse_args("diffusion")
 
 # pdb.set_trace()
 
-dataset_config = utils.Config(
+dataset_config = Config(
     args.loader,
     savepath=(args.savepath, "dataset_config.pkl"),
     env=args.dataset,
@@ -47,7 +49,7 @@ dataset_config = utils.Config(
     dataset_config=args.dataset_config,
 )
 
-render_config = utils.Config(
+render_config = Config(
     args.renderer,
     savepath=(args.savepath, "render_config.pkl"),
     env=args.dataset,
@@ -67,7 +69,7 @@ action_dim = dataset.action_dim  ## 2
 # ------------------------------ model & trainer ------------------------------#
 # -----------------------------------------------------------------------------#
 
-model_config = utils.Config(
+model_config = Config(
     args.model,
     savepath=(args.savepath, "model_config.pkl"),
     ##
@@ -86,7 +88,7 @@ model = model_config()
 
 
 ## model to be input
-diffusion_model_config = utils.Config(
+diffusion_model_config = Config(
     args.diffusion_model,
     savepath=(args.savepath, "diffusion_model.pkl"),
     device=args.device,
@@ -112,9 +114,7 @@ diffusion_model_config = utils.Config(
 # pdb.set_trace()
 
 
-from comp_diffuser.trainers.maze_trainer import MazeTrainer
-
-trainer_config = utils.Config(
+trainer_config = Config(
     MazeTrainer,
     savepath=(args.savepath, "trainer_config.pkl"),
     ##
@@ -151,12 +151,12 @@ trainer = trainer_config(
 # ------------------------ test forward & backward pass -----------------------#
 # -----------------------------------------------------------------------------#
 
-utils.report_parameters(model)
+report_parameters(model)
 
 print("Testing forward...", end=" ", flush=True)
-batch = utils.batchify(dataset[0])  # [1,380,2]
+batch = batchify(dataset[0])  # [1,380,2]
 # batch = utils.batchify_seq( [dataset[0], dataset[1]] )
-batch = utils.batch_copy(batch, 4)
+batch = batch_copy(batch, 4)
 obs_trajs, act_trajs, boundary_conditions = batch
 # pdb.set_trace()
 ##---- can be delete

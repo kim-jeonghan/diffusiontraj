@@ -118,8 +118,7 @@ def batchify_seq(batches: list):
 
         ## BUG: not finished
         assert False
-        if type(bat[i_e]) == dict:
-            out_d = {}
+        if isinstance(bat[i_e], dict):
             for kk in bat[i_e]:
                 for i_x, bat in enumerate(bat_seq):
                     # out.append( bat[i_e][] )
@@ -153,6 +152,7 @@ def to_img(x):
 
 
 def set_device(device):
+    global DEVICE
     DEVICE = device
     if "cuda" in device:
         torch.set_default_tensor_type(torch.cuda.FloatTensor)
@@ -187,7 +187,6 @@ def report_parameters(model, topk=10):
 
     modules = dict(model.named_modules())
     sorted_keys = sorted(counts, key=lambda x: -counts[x])
-    max_length = max([len(k) for k in sorted_keys])
     for i in range(topk):
         key = sorted_keys[i]
         count = counts[key]
@@ -230,7 +229,7 @@ def batch_repeat_tensor_in_dict(
                 ]
                 * len(cond_dd[k].shape[1:])
             )
-        elif type(cond_dd[k]) == np.ndarray:
+        elif isinstance(cond_dd[k], np.ndarray):
             # dd[k]
             new_dd[k] = einops.repeat(cond_dd[k], "b ... -> (rr b) ...", rr=n_rp)
         else:

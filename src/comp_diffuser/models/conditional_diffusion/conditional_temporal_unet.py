@@ -2,7 +2,7 @@ import einops
 import torch
 import torch.nn as nn
 
-import comp_diffuser.utils as utils
+from ...utils.eval_utils import print_color
 
 # PositionalEncoding2D,
 # Conv1dBlock_dd,
@@ -42,7 +42,7 @@ class ConditionalTemporalUNet(nn.Module):
         dims = [transition_dim, *map(lambda m: base_dim * m, dim_mults)]
         ## [(64,128), (128,256), (256,512)]
         in_out = list(zip(dims[:-1], dims[1:]))
-        utils.print_color(
+        print_color(
             f"[ models/ConditionalTemporalUNet ] Channel dimensions: {in_out}", c="c"
         )
 
@@ -137,7 +137,7 @@ class ConditionalTemporalUNet(nn.Module):
         assert self.last_conv_ksize == 1, "1 is from diffuser"
 
         # print(f'[TemporalUnet_WCond] concept_drop_prob: {self.concept_drop_prob}')
-        utils.print_color(
+        print_color(
             f"[TemporalUnet_WCond] {time_dim=}, {tot_cond_dim=}, {self.ext_cond_dim=}"
         )
         # pdb.set_trace()
@@ -156,7 +156,7 @@ class ConditionalTemporalUNet(nn.Module):
         res_block_type = ResidualTemporalBlock if self.cat_t_w else None
 
         self.down_times = network_config.get("down_times", 1e5)
-        utils.print_color(f"[Unet down_times] {self.down_times}", c="c")
+        print_color(f"[Unet down_times] {self.down_times}", c="c")
         ## default in_out: [(64,128), (128,256), (256,512)]
         for ind, (dim_in, dim_out) in enumerate(in_out):
             # is_last = ind >= (num_resolutions - 1)

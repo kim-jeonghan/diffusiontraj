@@ -4,7 +4,7 @@ import einops
 import torch
 import torch.nn as nn
 
-import comp_diffuser.utils as utils
+from ...utils.eval_utils import print_color
 from ..helpers import (
     Conv1dBlock,
     Downsample1d,
@@ -43,9 +43,7 @@ class TrajectoryTimeEncoder(nn.Module):
             *map(lambda m: round(base_dim * m), dim_mults),
         ]  ## dec 22, add round
         in_out = list(zip(dims[:-1], dims[1:]))
-        utils.print_color(
-            f"[ models/TrajectoryTimeEncoder ] Channel dimensions: {in_out}"
-        )
+        print_color(f"[ models/TrajectoryTimeEncoder ] Channel dimensions: {in_out}")
 
         self.tjti_enc_config = tjti_enc_config
         self.c_traj_hzn = c_traj_hzn
@@ -59,9 +57,7 @@ class TrajectoryTimeEncoder(nn.Module):
         self.mid_conv_ks = tjti_enc_config.get("mid_conv_ks", 5)
         # pdb.set_trace()
 
-        utils.print_color(
-            f"TjTi Enc: {self.cnn_out_dim=}, {self.final_mlp_dims=}", c="y"
-        )
+        print_color(f"TjTi Enc: {self.cnn_out_dim=}, {self.final_mlp_dims=}", c="y")
 
         if self.t_seq_encoder_type == "mlp":
             self.time_mlp = nn.Sequential(
@@ -84,7 +80,7 @@ class TrajectoryTimeEncoder(nn.Module):
 
         num_resolutions = len(in_out)
 
-        utils.print_color("TjTi Enc: unet: ", in_out)
+        print_color("TjTi Enc: unet: ", in_out)
         for ind, (dim_in, dim_out) in enumerate(in_out):
             is_last = ind >= (num_resolutions - 1)
 
@@ -132,7 +128,7 @@ class TrajectoryTimeEncoder(nn.Module):
 
         self.last_hzn = horizon
         self.f_mlp_in_dim = self.last_hzn * self.cnn_out_dim
-        utils.print_color(
+        print_color(
             f"TjTi Enc: {mid_dim=}, {self.last_hzn=}, {self.f_mlp_in_dim=}", c="y"
         )
 
@@ -150,7 +146,7 @@ class TrajectoryTimeEncoder(nn.Module):
         f_mlp_in_outs = list(zip(self.final_mlp_dims[:-1], self.final_mlp_dims[1:]))
         f_mlp_n_layer = len(f_mlp_in_outs)
 
-        utils.print_color(f"TjTi Enc: {self.f_mlp_in_dim=}, {f_mlp_in_outs=}", c="c")
+        print_color(f"TjTi Enc: {self.f_mlp_in_dim=}, {f_mlp_in_outs=}", c="c")
 
         self.f_mlp_blocks = []
         for ind, (dim_in, dim_out) in enumerate(f_mlp_in_outs):

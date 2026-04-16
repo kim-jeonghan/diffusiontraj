@@ -33,7 +33,7 @@ def save_imgs_to_mp4(imgs, save_path, fps=24, n_repeat_first=0, n_rep_list=None)
         assert imgs.ndim == 4
         if imgs.shape[1] == 3:
             imgs = imgs.permute(0, 2, 3, 1).numpy()
-    elif type(imgs) == list:
+    elif isinstance(imgs, list):
         imgs = np.array(imgs)
 
     if n_repeat_first > 0:

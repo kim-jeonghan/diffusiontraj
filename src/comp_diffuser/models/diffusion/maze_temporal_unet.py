@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 
 import comp_diffuser.utils as utils
+
 from ..conditional_diffusion.residual_temporal_block import ResidualTemporalBlock
 from ..helpers import (
     Conv1dBlock,

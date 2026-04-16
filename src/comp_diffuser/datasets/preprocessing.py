@@ -2,8 +2,7 @@ import einops
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
-import comp_diffuser.utils as utils
-
+from ..utils.eval_utils import print_color
 from .d4rl import load_environment
 
 # -----------------------------------------------------------------------------#
@@ -75,9 +74,7 @@ def maze2d_set_terminals(env):
         ## dict_keys(['actions', 'infos/goal', 'infos/qpos', 'infos/qvel', 'observations', 'rewards', 'terminals', 'timeouts'])
         ## what is the meaning of timeouts here??
         ## Large: 16726,0
-        utils.print_color(
-            f"{dataset['timeouts'].sum()=}, {dataset['terminals'].sum()=}"
-        )
+        print_color(f"{dataset['timeouts'].sum()=}, {dataset['terminals'].sum()=}")
         # pdb.set_trace()
         ## check smoothiness: yes, all trajs are closely connected, max: 0.127
         # obs_all = dataset['observations'][:,:2]
@@ -144,7 +141,7 @@ def ben_maze2d_set_terminals(env):
         # pdb.set_trace()
         # assert path_lengths.sum() ==
 
-        utils.print_color(
+        print_color(
             f"[ utils/preprocessing ] Segmented {env.name} | {len(path_lengths)} paths | "
             f"min length: {path_lengths.min()} | max length: {path_lengths.max()}"
         )
@@ -166,9 +163,7 @@ def maze2d_set_terminals_seg(env):
         """
         ## dict_keys(['actions', 'infos/goal', 'infos/qpos', 'infos/qvel', 'observations', 'rewards', 'terminals', 'timeouts'])
         ## Large Maze: 16726,0
-        utils.print_color(
-            f"1: {dataset['timeouts'].sum()=}, {dataset['terminals'].sum()=}"
-        )
+        print_color(f"1: {dataset['timeouts'].sum()=}, {dataset['terminals'].sum()=}")
 
         len_dset = len(dataset["timeouts"])
         ## last one is discard
@@ -192,9 +187,7 @@ def maze2d_set_terminals_seg(env):
 
         dataset["timeouts"] = timeouts
 
-        utils.print_color(
-            f"2: {dataset['timeouts'].sum()=}, {dataset['terminals'].sum()=}"
-        )
+        print_color(f"2: {dataset['timeouts'].sum()=}, {dataset['terminals'].sum()=}")
         # pdb.set_trace()
 
         return dataset
