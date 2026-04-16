@@ -1,6 +1,3 @@
-import sys
-
-sys.path.insert(0, './')
 import os
 import random
 import warnings
@@ -10,33 +7,34 @@ import numpy as np
 import torch
 import yaml
 
-from comp_diffuser.utils import utils
+from ...utils import utils
 
-warnings.simplefilter('always', ResourceWarning)  # Show all resource warnings
+warnings.simplefilter("always", ResourceWarning)  # Show all resource warnings
 from tap import Tap
 
-from comp_diffuser.pl_eval.gen_ev_probs.gen_m2d_probs_utils import (
+from .gen_m2d_probs_utils import (
     m2d_rand_sample_probs,
     merge_prob_dicts,
 )
-from comp_diffuser.pl_eval.gen_ev_probs.m2d_pl_const import m2d_get_bottom_top_rows
+from .m2d_pl_const import m2d_get_bottom_top_rows
 
 
 class ArgsParser(Tap):
-    sub_conf: str = 'config.maze2d'
+    sub_conf: str = "config.maze2d"
+
 
 def main():
-    '''a helper script to generate dataset of random samples in the Libero env'''
+    """a helper script to generate dataset of random samples in the Libero env"""
 
     args = ArgsParser().parse_args()
 
-    file_path = 'src/comp_diffuser/pl_eval/gen_ev_probs/gen_m2d_our_probs_confs.yaml'
+    file_path = "src/comp_diffuser/pl_eval/gen_ev_probs/gen_m2d_our_probs_confs.yaml"
     # Open the YAML file and load its contents
-    with open(file_path, 'r') as file:
+    with open(file_path, "r") as file:
         config = yaml.safe_load(file)
         rs_cfg = config[args.sub_conf]
 
-    seed_u = rs_cfg['seed_u']
+    seed_u = rs_cfg["seed_u"]
     random.seed(seed_u)
     np.random.seed(seed_u)
     torch.manual_seed(seed_u)
@@ -44,14 +42,14 @@ def main():
     # pdb.set_trace()
     ## TODO: Oct 21, 18:53, From Here
 
-    el_name = rs_cfg['el_name']
-    assert el_name == 'maze2d-large-v1', 'not implement others yet'
+    el_name = rs_cfg["el_name"]
+    assert el_name == "maze2d-large-v1", "not implement others yet"
 
     ## do we actually need to init an env?
     # env = gym.make(rs_cfg['el_name'],) #  gen_data=True)
-    utils.print_color(f'el_name: {el_name}')
+    utils.print_color(f"el_name: {el_name}")
     prob_dicts = []
-    if rs_cfg['prob_type'] == 'bottom_top_2way':
+    if rs_cfg["prob_type"] == "bottom_top_2way":
         ## np2d (n_valid_cell, 2)
         bottom_row, top_row = m2d_get_bottom_top_rows(el_name)
         ## 1. from bottom to top
@@ -76,36 +74,27 @@ def main():
     else:
         raise NotImplementedError
 
-    
     ## check consistency ??
 
-    
-
-
-
-
-
-
-    h5_root = '/coc/flash7/yluo470/robot2024/hi_src/comp_diffuser/data/smoke/ev_probs'
-    h5_save_path = f'{h5_root}/{args.sub_conf}.hdf5'
+    h5_root = "/coc/flash7/yluo470/robot2024/hi_src/comp_diffuser/data/smoke/ev_probs"
+    h5_save_path = f"{h5_root}/{args.sub_conf}.hdf5"
     # pdb.set_trace()
-    num_probs = all_prob_dict['start_state'].shape[0]
+    num_probs = all_prob_dict["start_state"].shape[0]
 
     ## ----------------------------------
     ## Finished all, save to hdf5
-    with h5py.File(h5_save_path, 'w') as file:
-        file.create_dataset('start_state', data=all_prob_dict['start_state'])
-        file.create_dataset('goal_pos', data=all_prob_dict['goal_pos'])
+    with h5py.File(h5_save_path, "w") as file:
+        file.create_dataset("start_state", data=all_prob_dict["start_state"])
+        file.create_dataset("goal_pos", data=all_prob_dict["goal_pos"])
 
-        file.attrs['env_seed'] = seed_u
-        file.attrs['env_name'] = el_name
+        file.attrs["env_seed"] = seed_u
+        file.attrs["env_name"] = el_name
 
     ## lock file
-    if 'smoke' not in args.sub_conf:
+    if "smoke" not in args.sub_conf:
         os.chmod(h5_save_path, 0o444)
-    utils.print_color(f'[save to] {h5_save_path=}')
-    
+    utils.print_color(f"[save to] {h5_save_path=}")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
-

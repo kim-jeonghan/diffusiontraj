@@ -1,21 +1,17 @@
 from collections import namedtuple
 
 import einops
-
-# import numpy as np
 import torch
 
 import comp_diffuser.utils as utils
 
-# from diffusion.datasets.preprocessing import get_policy_preprocess_fn
-
-InverseDynamicsTrajectories = namedtuple('Trajectories', 'actions observations')
+InverseDynamicsTrajectories = namedtuple("Trajectories", "actions observations")
 # GuidedTrajectories = namedtuple('GuidedTrajectories', 'actions observations value')
+
 
 class Policy_InvDyn:
 
-    def __init__(self, diffusion_model, 
-                 normalizer):
+    def __init__(self, diffusion_model, normalizer):
         self.diffusion_model = diffusion_model
         self.normalizer = normalizer
         self.action_dim = normalizer.action_dim
@@ -29,18 +25,18 @@ class Policy_InvDyn:
         conditions = utils.apply_dict(
             self.normalizer.normalize,
             conditions,
-            'observations',
+            "observations",
         )
-        conditions = utils.to_torch(conditions, dtype=torch.float32, device='cuda:0')
+        conditions = utils.to_torch(conditions, dtype=torch.float32, device="cuda:0")
         conditions = utils.apply_dict(
             einops.repeat,
             conditions,
-            'd -> repeat d', repeat=batch_size,
+            "d -> repeat d",
+            repeat=batch_size,
         )
         return conditions
 
     def __call__(self, conditions, debug=False, batch_size=1):
-
 
         conditions = self._format_conditions(conditions, batch_size)
 
@@ -52,11 +48,11 @@ class Policy_InvDyn:
         sample = self.diffusion_model(conditions)
         ## prev_obs, next_obs; ([1, 383, 8])
         obs_comb = torch.cat([sample[:, :-1, :], sample[:, 1:, :]], dim=2)
-        obs_flat = einops.rearrange(obs_comb, 'b h d -> (b h) d')
+        obs_flat = einops.rearrange(obs_comb, "b h d -> (b h) d")
         ## [383, 2]
         actions_flat = self.diffusion_model.inv_model(obs_flat)
         # pdb.set_trace()
-        actions = einops.rearrange(actions_flat, '(b h) d -> b h d', b=sample.shape[0])
+        actions = einops.rearrange(actions_flat, "(b h) d -> b h d", b=sample.shape[0])
         sample = utils.to_np(sample)
         actions = utils.to_np(actions)
 
@@ -65,9 +61,7 @@ class Policy_InvDyn:
         ## extract action [ batch_size x horizon x transition_dim ]
         # actions = sample[:, :, :self.action_dim]
 
-
-
-        actions = self.normalizer.unnormalize(actions, 'actions')
+        actions = self.normalizer.unnormalize(actions, "actions")
         # actions = np.tanh(actions)
 
         ## extract first action
@@ -75,7 +69,7 @@ class Policy_InvDyn:
 
         # if debug:
         normed_observations = sample[:, :, 0:]
-        observations = self.normalizer.unnormalize(normed_observations, 'observations')
+        observations = self.normalizer.unnormalize(normed_observations, "observations")
 
         # if deltas.shape[-1] < observation.shape[-1]:
         #     qvel_dim = observation.shape[-1] - deltas.shape[-1]

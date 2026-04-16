@@ -1,2 +1,8 @@
-from comp_diffuser.datasets.comp.ben_padded_sequence_dataset import BenPaddedSequenceDataset
-from comp_diffuser.datasets.comp.compositional_sequence_dataset import CompositionalSequenceDataset
+from .ben_padded_sequence_dataset import (
+    BenPaddedSequenceDataset as BenPaddedSequenceDataset,
+)
+from .compositional_sequence_dataset import (
+    CompositionalSequenceDataset as CompositionalSequenceDataset,
+)
+
+__all__ = ["BenPaddedSequenceDataset", "CompositionalSequenceDataset"]

@@ -99,3 +99,4 @@ my_class_*.pkl
 # Local datasets
 data/
 luotest/
+.omx

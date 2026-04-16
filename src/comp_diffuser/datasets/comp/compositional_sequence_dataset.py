@@ -4,28 +4,36 @@ import numpy as np
 import torch
 
 import comp_diffuser.utils as utils
-from comp_diffuser.datasets.buffer import ReplayBuffer
-from comp_diffuser.datasets.d4rl import load_environment
-from comp_diffuser.datasets.normalization import DatasetNormalizer
-from comp_diffuser.datasets.preprocessing import get_preprocess_fn
 
+from ..buffer import ReplayBuffer
+from ..d4rl import load_environment
+from ..normalization import DatasetNormalizer
+from ..preprocessing import get_preprocess_fn
 from .compositional_data_utils import comp_sequence_dataset
 
-SequenceBatch = namedtuple('SequenceBatch', 'obs_trajs act_trajs conditions')
+SequenceBatch = namedtuple("SequenceBatch", "obs_trajs act_trajs conditions")
+
 
 class CompositionalSequenceDataset(torch.utils.data.Dataset):
 
-    def __init__(self, env='hopper-medium-replay', horizon=64,
-        normalizer='LimitsNormalizer', preprocess_fns=[], max_path_length=1000,
-        max_n_episodes=10000, termination_penalty=0, use_padding=True,
+    def __init__(
+        self,
+        env="hopper-medium-replay",
+        horizon=64,
+        normalizer="LimitsNormalizer",
+        preprocess_fns=[],
+        max_path_length=1000,
+        max_n_episodes=10000,
+        termination_penalty=0,
+        use_padding=True,
         dset_h5path=None,
         dataset_config={},
-        ):
+    ):
         # pdb.set_trace()
 
         ## maze2d_set_terminals
         self.env = env = load_environment(env)
-        env.len_seg = dataset_config.get('len_seg', None)
+        env.len_seg = dataset_config.get("len_seg", None)
         self.preprocess_fn = get_preprocess_fn(preprocess_fns, env)
         self.env = env = load_environment(env)
         self.horizon = horizon
@@ -34,29 +42,34 @@ class CompositionalSequenceDataset(torch.utils.data.Dataset):
         ## -----------------------
         ## call get_dataset inside
         env.dset_h5path = dset_h5path
-        self.obs_select_dim = dataset_config['obs_select_dim'] 
+        self.obs_select_dim = dataset_config["obs_select_dim"]
 
-        self.dset_type = dataset_config.get('dset_type', 'ours')
+        self.dset_type = dataset_config.get("dset_type", "ours")
 
         itr = comp_sequence_dataset(env, self.preprocess_fn, dataset_config)
 
-
         if use_padding:
-            assert dataset_config['pad_type'] in ['last', 'first_last']
-            replBuf_config=dict(use_padding=True, tgt_hzn=horizon, **dataset_config)
-            assert 'bens' in self.dset_type
+            assert dataset_config["pad_type"] in ["last", "first_last"]
+            replBuf_config = dict(use_padding=True, tgt_hzn=horizon, **dataset_config)
+            assert "bens" in self.dset_type
         else:
-            assert dataset_config.get('pad_type', None) == None
-            replBuf_config=dict(use_padding=False)
-            
+            assert dataset_config.get("pad_type", None) == None
+            replBuf_config = dict(use_padding=False)
 
-        fields = ReplayBuffer(max_n_episodes, max_path_length, termination_penalty, replBuf_config=replBuf_config)
+        fields = ReplayBuffer(
+            max_n_episodes,
+            max_path_length,
+            termination_penalty,
+            replBuf_config=replBuf_config,
+        )
         for i, episode in enumerate(itr):
             fields.add_path(episode)
         fields.finalize()
         # pdb.set_trace() ## TODO: From Here, Oct 14, obs is not normalized now
 
-        self.normalizer = DatasetNormalizer(fields, normalizer, path_lengths=fields['path_lengths'])
+        self.normalizer = DatasetNormalizer(
+            fields, normalizer, path_lengths=fields["path_lengths"]
+        )
         self.indices = self.make_indices(fields.path_lengths, horizon)
 
         self.observation_dim = fields.observations.shape[-1]
@@ -65,64 +78,71 @@ class CompositionalSequenceDataset(torch.utils.data.Dataset):
         self.n_episodes = fields.n_episodes
         self.path_lengths = fields.path_lengths
         self.normalize()
-        norm_const_dict = dataset_config.get('norm_const_dict', None)
+        norm_const_dict = dataset_config.get("norm_const_dict", None)
         # pdb.set_trace()
 
-
-        if norm_const_dict and 'smoke' not in str(dset_h5path):
-            for k_name in ['actions', 'observations']:
-                utils.print_color(f'{k_name=}')
+        if norm_const_dict and "smoke" not in str(dset_h5path):
+            for k_name in ["actions", "observations"]:
+                utils.print_color(f"{k_name=}")
                 print(self.normalizer.normalizers[k_name].mins)
                 print(self.normalizer.normalizers[k_name].maxs)
                 # pdb.set_trace()
-                assert np.isclose(norm_const_dict[k_name][0], 
-                                  self.normalizer.normalizers[k_name].mins, atol=1e-5).all()
-                assert np.isclose(norm_const_dict[k_name][1], 
-                                  self.normalizer.normalizers[k_name].maxs, atol=1e-5).all()
-        
+                assert np.isclose(
+                    norm_const_dict[k_name][0],
+                    self.normalizer.normalizers[k_name].mins,
+                    atol=1e-5,
+                ).all()
+                assert np.isclose(
+                    norm_const_dict[k_name][1],
+                    self.normalizer.normalizers[k_name].maxs,
+                    atol=1e-5,
+                ).all()
+
         print(fields)
-        utils.print_color(f'Dataset Len: {len(self.indices)}', c='y')
+        utils.print_color(f"Dataset Len: {len(self.indices)}", c="y")
         # shapes = {key: val.shape for key, val in self.fields.items()}
         # print(f'[ datasets/mujoco ] Dataset fields: {shapes}')
 
-    def normalize(self, keys=['observations', 'actions']):
-        '''
-            normalize fields that will be predicted by the diffusion model
-        '''
+    def normalize(self, keys=["observations", "actions"]):
+        """
+        normalize fields that will be predicted by the diffusion model
+        """
         for key in keys:
-            array = self.fields[key].reshape(self.n_episodes*self.max_path_length, -1)
+            array = self.fields[key].reshape(self.n_episodes * self.max_path_length, -1)
             normed = self.normalizer(array, key)
-            self.fields[f'normed_{key}'] = normed.reshape(self.n_episodes, self.max_path_length, -1)
+            self.fields[f"normed_{key}"] = normed.reshape(
+                self.n_episodes, self.max_path_length, -1
+            )
 
     def make_indices(self, path_lengths, horizon):
-        '''
-            makes indices for sampling from dataset;
-            each index maps to a datapoint
-        '''
+        """
+        makes indices for sampling from dataset;
+        each index maps to a datapoint
+        """
         indices = []
         for i, path_length in enumerate(path_lengths):
             max_start = min(path_length - 1, self.max_path_length - horizon)
             ## NOTE: this will automatically pad 0, which is bad
             # if not self.use_padding:
-                # max_start = min(max_start, path_length - horizon)
-            
+            # max_start = min(max_start, path_length - horizon)
+
             max_start = min(max_start, path_length - horizon)
             # for start in range(max_start):
-            for start in range(max_start+1):
+            for start in range(max_start + 1):
                 end = start + horizon
                 indices.append((i, start, end))
         indices = np.array(indices)
         return indices
 
     def get_conditions(self, observations):
-        '''
-            condition on current observation for planning
-        '''
+        """
+        condition on current observation for planning
+        """
         ## important: by default: goal-conditioned
         return {
-                0: observations[0],
-                self.horizon - 1: observations[-1],
-            }
+            0: observations[0],
+            self.horizon - 1: observations[-1],
+        }
 
     def __len__(self):
         return len(self.indices)

@@ -6,7 +6,7 @@ source activate hi_diffuser
 
 pip install pip==21 && \
 pip install "cython<3" ## ori: <=3 # <3 ?
-pip install setuptools==65.5.0 
+pip install setuptools==65.5.0
 
 ## 0.40.0
 pip install wheel==0.38.0 && \

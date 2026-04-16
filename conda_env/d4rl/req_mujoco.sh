@@ -1,4 +1,4 @@
-## install mujoco210 first, just simply install it to 
+## install mujoco210 first, just simply install it to
 ## ~/.mujoco/mujoco210, otherwise might have bugs!
 
 ## remember to put this to ~/.bashrc

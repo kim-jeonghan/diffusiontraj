@@ -1,8 +1,8 @@
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
-SRC_ROOT = REPO_ROOT / "src"
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+SRC_ROOT = PROJECT_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
@@ -13,88 +13,90 @@ import comp_diffuser.utils as utils
 
 torch.backends.cudnn.benchmark = True
 torch.set_printoptions(precision=4, sci_mode=False)
-import numpy as np; np.set_printoptions(precision=3, suppress=True)
+import numpy as np
+
+np.set_printoptions(precision=3, suppress=True)
 
 
-#-----------------------------------------------------------------------------#
-#----------------------------------- setup -----------------------------------#
-#-----------------------------------------------------------------------------#
+# -----------------------------------------------------------------------------#
+# ----------------------------------- setup -----------------------------------#
+# -----------------------------------------------------------------------------#
+
 
 class ArgsParser(utils.ArgsParser):
     dataset: str = None
     config: str
 
 
-args = ArgsParser().parse_args('diffusion')
+args = ArgsParser().parse_args("diffusion")
 
 
-#-----------------------------------------------------------------------------#
-#---------------------------------- dataset ----------------------------------#
-#-----------------------------------------------------------------------------#
+# -----------------------------------------------------------------------------#
+# ---------------------------------- dataset ----------------------------------#
+# -----------------------------------------------------------------------------#
 
 # pdb.set_trace()
 
 dataset_config = utils.Config(
     args.loader,
-    savepath=(args.savepath, 'dataset_config.pkl'),
+    savepath=(args.savepath, "dataset_config.pkl"),
     env=args.dataset,
     horizon=args.tot_horizon,
     normalizer=args.normalizer,
     preprocess_fns=args.preprocess_fns,
     max_path_length=args.max_path_length,
     ###
-    max_n_episodes=getattr(args, 'max_n_episodes', 10000), 
+    max_n_episodes=getattr(args, "max_n_episodes", 10000),
     ###
     termination_penalty=args.termination_penalty,
     use_padding=args.use_padding,
     ## put a linnk to a smaller dataset for debugging purpose
-    dset_h5path=getattr(args, 'dset_h5path', None),
+    dset_h5path=getattr(args, "dset_h5path", None),
     dataset_config=args.dataset_config,
 )
 
 render_config = utils.Config(
     args.renderer,
-    savepath=(args.savepath, 'render_config.pkl'),
+    savepath=(args.savepath, "render_config.pkl"),
     env=args.dataset,
 )
 
 dataset = dataset_config()
 renderer = render_config()
 
-observation_dim = dataset.observation_dim ## 2
-action_dim = dataset.action_dim ## 2
+observation_dim = dataset.observation_dim  ## 2
+action_dim = dataset.action_dim  ## 2
 
 # test_sample = dataset[0]
 # torch.set_printoptions(precision=10, sci_mode=False)
 # pdb.set_trace() ## check horizon
 
-#-----------------------------------------------------------------------------#
-#------------------------------ model & trainer ------------------------------#
-#-----------------------------------------------------------------------------#
+# -----------------------------------------------------------------------------#
+# ------------------------------ model & trainer ------------------------------#
+# -----------------------------------------------------------------------------#
 
 model_config = utils.Config(
     args.model,
-    savepath=(args.savepath, 'model_config.pkl'),
+    savepath=(args.savepath, "model_config.pkl"),
     ##
     device=args.device,
     ##
     horizon=args.sm_horizon,
     transition_dim=observation_dim,
-    base_dim=args.base_dim, ## new
+    base_dim=args.base_dim,  ## new
     dim_mults=args.dim_mults,
-    time_dim=args.time_dim, ## new
-    network_config=args.network_config, ## new
+    time_dim=args.time_dim,  ## new
+    network_config=args.network_config,  ## new
 )
 model = model_config()
 
 # pdb.set_trace()
 
 
-
 ## model to be input
 diffusion_model_config = utils.Config(
     args.diffusion_model,
-    savepath=(args.savepath, 'diffusion_model.pkl'),
+    savepath=(args.savepath, "diffusion_model.pkl"),
     device=args.device,
     ##
     horizon=args.sm_horizon,
@@ -114,17 +116,15 @@ diffusion_model_config = utils.Config(
 )
 
 
-
 #############
 # pdb.set_trace()
-
 
 
 from comp_diffuser.trainers.maze_trainer import MazeTrainer
 
 trainer_config = utils.Config(
     MazeTrainer,
-    savepath=(args.savepath, 'trainer_config.pkl'),
+    savepath=(args.savepath, "trainer_config.pkl"),
     ##
     train_batch_size=args.batch_size,
     train_lr=args.learning_rate,
@@ -133,16 +133,15 @@ trainer_config = utils.Config(
     sample_freq=args.sample_freq,
     save_freq=args.save_freq,
     label_freq=int(args.n_train_steps // args.n_saves),
-
     results_folder=args.savepath,
     n_reference=args.n_reference,
     n_samples=args.n_samples,
     trainer_dict=args.trainer_dict,
 )
 
-#-----------------------------------------------------------------------------#
-#-------------------------------- instantiate --------------------------------#
-#-----------------------------------------------------------------------------#
+# -----------------------------------------------------------------------------#
+# -------------------------------- instantiate --------------------------------#
+# -----------------------------------------------------------------------------#
 
 
 diffusion_model = diffusion_model_config(model=model)
@@ -156,14 +155,14 @@ trainer = trainer_config(
 
 # pdb.set_trace()
 
-#-----------------------------------------------------------------------------#
-#------------------------ test forward & backward pass -----------------------#
-#-----------------------------------------------------------------------------#
+# -----------------------------------------------------------------------------#
+# ------------------------ test forward & backward pass -----------------------#
+# -----------------------------------------------------------------------------#
 
 utils.report_parameters(model)
 
-print('Testing forward...', end=' ', flush=True)
-batch = utils.batchify(dataset[0]) # [1,380,2]
+print("Testing forward...", end=" ", flush=True)
+batch = utils.batchify(dataset[0])  # [1,380,2]
 # batch = utils.batchify_seq( [dataset[0], dataset[1]] )
 batch = utils.batch_copy(batch, 4)
 obs_trajs, act_trajs, boundary_conditions = batch
@@ -176,19 +175,20 @@ obs_trajs, act_trajs, boundary_conditions = batch
 loss, _ = diffusion_model.loss(x_clean=obs_trajs, cond_start_goal=boundary_conditions)
 loss.backward()
 # pdb.set_trace()
-print('✓')
+print("✓")
 
-#-----------------------------------------------------------------------------#
-#--------------------------------- save config ---------------------------------#
-#-----------------------------------------------------------------------------#
+# -----------------------------------------------------------------------------#
+# --------------------------------- save config ---------------------------------#
+# -----------------------------------------------------------------------------#
 
 
-all_configs = dict(dataset_config=dataset_config._dict, 
-                render_config=render_config._dict,
-                model_config=model_config._dict,
-                diffusion_model_config=diffusion_model_config._dict,
-                trainer_config=trainer_config._dict
-                )
+all_configs = dict(
+    dataset_config=dataset_config._dict,
+    render_config=render_config._dict,
+    model_config=model_config._dict,
+    diffusion_model_config=diffusion_model_config._dict,
+    trainer_config=trainer_config._dict,
+)
 
 # print(args)
 ckp_path = args.savepath
@@ -197,18 +197,18 @@ wandb.init(
     name=args.logger_name,
     id=args.logger_id,
     dir=ckp_path,
-    config=all_configs, ## need to be a dict
+    config=all_configs,  ## need to be a dict
     # resume="must",
-    mode='online' if dataset_config.dset_h5path is None else 'disabled'
+    mode="online" if dataset_config.dset_h5path is None else "disabled",
 )
 # pdb.set_trace()
 
-#-----------------------------------------------------------------------------#
-#--------------------------------- main loop ---------------------------------#
-#-----------------------------------------------------------------------------#
+# -----------------------------------------------------------------------------#
+# --------------------------------- main loop ---------------------------------#
+# -----------------------------------------------------------------------------#
 
 n_epochs = int(args.n_train_steps // args.n_steps_per_epoch)
 
 for i in range(n_epochs):
-    print(f'Epoch {i} / {n_epochs} | {args.savepath}')
+    print(f"Epoch {i} / {n_epochs} | {args.savepath}")
     trainer.train(n_train_steps=args.n_steps_per_epoch)
