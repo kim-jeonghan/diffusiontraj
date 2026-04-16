@@ -8,9 +8,10 @@ from einops.layers.torch import Rearrange
 
 import comp_diffuser.utils as utils
 
-#-----------------------------------------------------------------------------#
-#---------------------------------- modules ----------------------------------#
-#-----------------------------------------------------------------------------#
+# -----------------------------------------------------------------------------#
+# ---------------------------------- modules ----------------------------------#
+# -----------------------------------------------------------------------------#
+
 
 class SinusoidalPosEmb(nn.Module):
     def __init__(self, dim):
@@ -29,6 +30,7 @@ class SinusoidalPosEmb(nn.Module):
         emb = torch.cat((emb.sin(), emb.cos()), dim=-1)
         return emb
 
+
 class Downsample1d(nn.Module):
     def __init__(self, dim):
         super().__init__()
@@ -36,6 +38,7 @@ class Downsample1d(nn.Module):
 
     def forward(self, x):
         return self.conv(x)
+
 
 class Upsample1d(nn.Module):
     def __init__(self, dim):
@@ -45,19 +48,22 @@ class Upsample1d(nn.Module):
     def forward(self, x):
         return self.conv(x)
 
+
 class Conv1dBlock(nn.Module):
-    '''
-        Conv1d --> GroupNorm --> Mish
-    '''
+    """
+    Conv1d --> GroupNorm --> Mish
+    """
 
     def __init__(self, inp_channels, out_channels, kernel_size, n_groups=8):
         super().__init__()
 
         self.block = nn.Sequential(
-            nn.Conv1d(inp_channels, out_channels, kernel_size, padding=kernel_size // 2),
-            Rearrange('batch channels horizon -> batch channels 1 horizon'),
+            nn.Conv1d(
+                inp_channels, out_channels, kernel_size, padding=kernel_size // 2
+            ),
+            Rearrange("batch channels horizon -> batch channels 1 horizon"),
             nn.GroupNorm(n_groups, out_channels),
-            Rearrange('batch channels 1 horizon -> batch channels horizon'),
+            Rearrange("batch channels 1 horizon -> batch channels horizon"),
             nn.Mish(),
         )
 
@@ -76,13 +82,22 @@ def zero_module(module, do_zero):
 
     return module
 
-class Conv1dBlock_dd(nn.Module):
-    '''
-        Conv1d --> GroupNorm (8 /32) --> (Mish / SiLU)
-        ## checkparam groupnorm, n_groups
-    '''
 
-    def __init__(self, inp_channels, out_channels, kernel_size, mish=True, n_groups=8, conv_zero_init=False):
+class Conv1dBlock_dd(nn.Module):
+    """
+    Conv1d --> GroupNorm (8 /32) --> (Mish / SiLU)
+    ## checkparam groupnorm, n_groups
+    """
+
+    def __init__(
+        self,
+        inp_channels,
+        out_channels,
+        kernel_size,
+        mish=True,
+        n_groups=8,
+        conv_zero_init=False,
+    ):
         super().__init__()
 
         if mish:
@@ -91,10 +106,15 @@ class Conv1dBlock_dd(nn.Module):
             act_fn = nn.SiLU()
 
         self.block = nn.Sequential(
-            zero_module( nn.Conv1d(inp_channels, out_channels, kernel_size, padding=kernel_size // 2), conv_zero_init ),
-            Rearrange('batch channels horizon -> batch channels 1 horizon'),
+            zero_module(
+                nn.Conv1d(
+                    inp_channels, out_channels, kernel_size, padding=kernel_size // 2
+                ),
+                conv_zero_init,
+            ),
+            Rearrange("batch channels horizon -> batch channels 1 horizon"),
             nn.GroupNorm(n_groups, out_channels),
-            Rearrange('batch channels 1 horizon -> batch channels horizon'),
+            Rearrange("batch channels 1 horizon -> batch channels horizon"),
             act_fn,
         )
 
@@ -102,10 +122,10 @@ class Conv1dBlock_dd(nn.Module):
         return self.block(x)
 
 
+# -----------------------------------------------------------------------------#
+# ---------------------------------- sampling ---------------------------------#
+# -----------------------------------------------------------------------------#
 
-#-----------------------------------------------------------------------------#
-#---------------------------------- sampling ---------------------------------#
-#-----------------------------------------------------------------------------#
 
 def extract(a, t, x_shape):
     """
@@ -131,16 +151,19 @@ def extract_2d(a, t, x_shape):
 
     return out
 
+
 Two_Power_20 = 2**20
+
+
 def tensor_randint(low: torch.Tensor, high: torch.Tensor, size):
-    '''
+    """
     this method allows generating randint tensor where range is defined by a tensor
-    '''
+    """
     assert low.shape == high.shape == size
     assert (low < high).all()
     assert (high < Two_Power_20).all()
     ## [0 to (high - low - 1)] + low
-    return torch.randint( Two_Power_20, size=size, dtype=torch.long) % (high - low) + low
+    return torch.randint(Two_Power_20, size=size, dtype=torch.long) % (high - low) + low
 
 
 def cosine_beta_schedule(timesteps, s=0.008, dtype=torch.float32):
@@ -156,33 +179,38 @@ def cosine_beta_schedule(timesteps, s=0.008, dtype=torch.float32):
     betas_clipped = np.clip(betas, a_min=0, a_max=0.999)
     return torch.tensor(betas_clipped, dtype=dtype)
 
+
 def apply_conditioning(x, conditions, action_dim):
     for t, val in conditions.items():
         x[:, t, action_dim:] = val.clone()
     return x
 
 
-#-----------------------------------------------------------------------------#
-#---------------------------------- losses -----------------------------------#
-#-----------------------------------------------------------------------------#
+# -----------------------------------------------------------------------------#
+# ---------------------------------- losses -----------------------------------#
+# -----------------------------------------------------------------------------#
+
 
 class WeightedLoss(nn.Module):
 
     def __init__(self, weights, action_dim):
         super().__init__()
-        self.register_buffer('weights', weights)
+        self.register_buffer("weights", weights)
         self.action_dim = action_dim
 
     def forward(self, pred, targ):
-        '''
-            pred, targ : tensor
-                [ batch_size x horizon x transition_dim ]
-        '''
+        """
+        pred, targ : tensor
+            [ batch_size x horizon x transition_dim ]
+        """
         loss = self._loss(pred, targ)
         weighted_loss = (loss * self.weights).mean()
         ## loss just for the 0th action
-        a0_loss = (loss[:, 0, :self.action_dim] / self.weights[0, :self.action_dim]).mean()
-        return weighted_loss, {'a0_loss': a0_loss}
+        a0_loss = (
+            loss[:, 0, : self.action_dim] / self.weights[0, : self.action_dim]
+        ).mean()
+        return weighted_loss, {"a0_loss": a0_loss}
+
 
 class ValueLoss(nn.Module):
     def __init__(self, *args):
@@ -194,142 +222,146 @@ class ValueLoss(nn.Module):
 
         if len(pred) > 1:
             corr = np.corrcoef(
-                utils.to_np(pred).squeeze(),
-                utils.to_np(targ).squeeze()
-            )[0,1]
+                utils.to_np(pred).squeeze(), utils.to_np(targ).squeeze()
+            )[0, 1]
         else:
             corr = np.NaN
 
         info = {
-            'mean_pred': pred.mean(), 'mean_targ': targ.mean(),
-            'min_pred': pred.min(), 'min_targ': targ.min(),
-            'max_pred': pred.max(), 'max_targ': targ.max(),
-            'corr': corr,
+            "mean_pred": pred.mean(),
+            "mean_targ": targ.mean(),
+            "min_pred": pred.min(),
+            "min_targ": targ.min(),
+            "max_pred": pred.max(),
+            "max_targ": targ.max(),
+            "corr": corr,
         }
 
         return loss, info
+
 
 class WeightedL1(WeightedLoss):
 
     def _loss(self, pred, targ):
         return torch.abs(pred - targ)
 
+
 class WeightedL2(WeightedLoss):
 
     def _loss(self, pred, targ):
-        return F.mse_loss(pred, targ, reduction='none')
+        return F.mse_loss(pred, targ, reduction="none")
+
 
 class ValueL1(ValueLoss):
 
     def _loss(self, pred, targ):
         return torch.abs(pred - targ)
 
+
 class ValueL2(ValueLoss):
 
     def _loss(self, pred, targ):
-        return F.mse_loss(pred, targ, reduction='none')
+        return F.mse_loss(pred, targ, reduction="none")
 
 
 class WeightedLoss_L2_V2(nn.Module):
-    '''
+    """
     Added by luo, July 25 2024,
     ** support inputing a training time loss weight **
-    '''
+    """
+
     def __init__(self, weights, action_dim):
         super().__init__()
-        self.register_buffer('weights', weights)
+        self.register_buffer("weights", weights)
         self.action_dim = action_dim
 
-    def forward(self, pred, targ, ext_loss_w=1.):
-        '''
-            pred, targ : tensor
-                [ batch_size x horizon x transition_dim ]
-            ext_loss_w: tensor [B,H,1] or 1.
-        '''
+    def forward(self, pred, targ, ext_loss_w=1.0):
+        """
+        pred, targ : tensor
+            [ batch_size x horizon x transition_dim ]
+        ext_loss_w: tensor [B,H,1] or 1.
+        """
 
         loss = ext_loss_w * self._loss(pred, targ)
         # pdb.set_trace()
 
         weighted_loss = (loss * self.weights).mean()
         ## loss just for the 0th action
-        a0_loss = (loss[:, 0, :self.action_dim] / self.weights[0, :self.action_dim]).mean()
-        return weighted_loss, {'a0_loss': a0_loss}
+        a0_loss = (
+            loss[:, 0, : self.action_dim] / self.weights[0, : self.action_dim]
+        ).mean()
+        return weighted_loss, {"a0_loss": a0_loss}
 
     def _loss(self, pred, targ):
-        return F.mse_loss(pred, targ, reduction='none')
-
+        return F.mse_loss(pred, targ, reduction="none")
 
 
 class WeightedLoss_L2_InvDyn_V3(nn.Module):
-    '''
+    """
     Added by luo, July 28 2024,
     ** support inputing a training time loss weight **
-    '''
-    def __init__(self, weights,):
+    """
+
+    def __init__(
+        self,
+        weights,
+    ):
         super().__init__()
-        self.register_buffer('weights', weights)
+        self.register_buffer("weights", weights)
 
-
-    def forward(self, pred, targ, ext_loss_w=1.):
-        '''
-            pred, targ : tensor
-                [ batch_size x horizon x transition_dim ]
-            ext_loss_w: tensor [B,H,1] or 1.
-        '''
+    def forward(self, pred, targ, ext_loss_w=1.0):
+        """
+        pred, targ : tensor
+            [ batch_size x horizon x transition_dim ]
+        ext_loss_w: tensor [B,H,1] or 1.
+        """
         ## B,H,1 * B,H,D
         loss = ext_loss_w * self._loss(pred, targ)
         # pdb.set_trace()
         ## can auto boardcast, weights: (B,H,dim) * (H,dim) -> (B,H,dim)
         weighted_loss = (loss * self.weights).mean()
 
-        return weighted_loss, {} # {'a0_loss': 0.}
+        return weighted_loss, {}  # {'a0_loss': 0.}
 
     def _loss(self, pred, targ):
-        return F.mse_loss(pred, targ, reduction='none')
-
-
-
+        return F.mse_loss(pred, targ, reduction="none")
 
 
 ## ----------- Decision Diffuser Baseline --------------
+
 
 class WeightedStateLoss(nn.Module):
 
     def __init__(self, weights):
         super().__init__()
-        self.register_buffer('weights', weights)
+        self.register_buffer("weights", weights)
 
     def forward(self, pred, targ):
-        '''
-            pred, targ : tensor
-                [ batch_size x horizon x transition_dim ]
-        '''
+        """
+        pred, targ : tensor
+            [ batch_size x horizon x transition_dim ]
+        """
         loss = self._loss(pred, targ)
         weighted_loss = (loss * self.weights).mean()
-        return weighted_loss, {'a0_loss': weighted_loss}
+        return weighted_loss, {"a0_loss": weighted_loss}
+
 
 class WeightedStateL2(WeightedStateLoss):
 
     def _loss(self, pred, targ):
-        return F.mse_loss(pred, targ, reduction='none')
+        return F.mse_loss(pred, targ, reduction="none")
 
 
 ## -----------------------------------------------------
 
 
-
-
-
-
-
 Losses = {
-    'l1': WeightedL1,
-    'l2': WeightedL2,
-    'l2_v2': WeightedLoss_L2_V2,
-    'l2_inv_v3': WeightedLoss_L2_InvDyn_V3,
-    'value_l1': ValueL1,
-    'value_l2': ValueL2,
+    "l1": WeightedL1,
+    "l2": WeightedL2,
+    "l2_v2": WeightedLoss_L2_V2,
+    "l2_inv_v3": WeightedLoss_L2_InvDyn_V3,
+    "value_l1": ValueL1,
+    "value_l2": ValueL2,
     ## dd baseline
-    'state_l2': WeightedStateL2,
-    
+    "state_l2": WeightedStateL2,
 }

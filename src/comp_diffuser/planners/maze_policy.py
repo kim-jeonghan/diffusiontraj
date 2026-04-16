@@ -3,51 +3,49 @@ import time
 import einops
 import torch
 
-import comp_diffuser.utils as utils
-
 # from comp_diffuser.models.trajectory_stitching import TrajectoryStitchingGaussianDiffusionWithInverseDynamics
-from comp_diffuser.models.diffusion.maze_diffusion import MazeGaussianDiffusionWithInverseDynamics
-from comp_diffuser.models.helpers import apply_conditioning
-from comp_diffuser.models.trajectory_stitching.trajectory_stitching_policy import (
+from ..models.diffusion.maze_diffusion import MazeGaussianDiffusionWithInverseDynamics
+from ..models.helpers import apply_conditioning
+from ..models.trajectory_stitching.trajectory_stitching_policy import (
     TrajectoryStitchingPrediction,
 )
+import comp_diffuser.utils as utils
 
 
 class MazePolicy:
 
-    def __init__(self, diffusion_model, 
-                 normalizer, 
-                 policy_config,
-                 ):
+    def __init__(
+        self,
+        diffusion_model,
+        normalizer,
+        policy_config,
+    ):
         self.diffusion_model: MazeGaussianDiffusionWithInverseDynamics = diffusion_model
         self.diffusion_model.eval()
         self.normalizer = normalizer
         self.action_dim = normalizer.action_dim
-        self.plan_horizon = policy_config.get('ev_pl_hzn', diffusion_model.horizon)
+        self.plan_horizon = policy_config.get("ev_pl_hzn", diffusion_model.horizon)
         self.diffusion_model.horizon = self.plan_horizon
         self.prediction_time_history = []
         self.return_diffusion = False
-        
-        
 
     @property
     def device(self):
         parameters = list(self.diffusion_model.parameters())
         return parameters[0].device
-    
 
-
-
-    def generate_conditioned_trajectories_parallel(self, planner_inputs, debug=False, batch_size=1):
+    def generate_conditioned_trajectories_parallel(
+        self, planner_inputs, debug=False, batch_size=1
+    ):
         """
         `planner_inputs["start_goal_pairs"]` is an unnormalized array shaped `(2, n_problems, dim)`.
         """
         horizon = self.diffusion_model.horizon
         observation_dim = self.diffusion_model.observation_dim
 
-        start_goal_pairs = planner_inputs['start_goal_pairs']
+        start_goal_pairs = planner_inputs["start_goal_pairs"]
         start_goal_pairs = torch.tensor(
-            self.normalizer.normalize(start_goal_pairs, 'observations')
+            self.normalizer.normalize(start_goal_pairs, "observations")
         )
 
         assert start_goal_pairs.ndim == 3 and start_goal_pairs.shape[0] == 2
@@ -56,8 +54,13 @@ class MazePolicy:
         batch_size = 1
 
         boundary_conditions = {
-            0: einops.repeat(start_goal_pairs[0, :, :], 'n d -> (n r) d', r=batch_size).clone(),
-            horizon - 1: einops.repeat(start_goal_pairs[1, :, :], 'n d -> (n r) d', r=batch_size).clone(),
+            0: einops.repeat(
+                start_goal_pairs[0, :, :], "n d -> (n r) d", r=batch_size
+            ).clone(),
+            horizon
+            - 1: einops.repeat(
+                start_goal_pairs[1, :, :], "n d -> (n r) d", r=batch_size
+            ).clone(),
         }
 
         diffusion_inputs = dict(boundary_conditions=boundary_conditions)
@@ -78,7 +81,7 @@ class MazePolicy:
         normalized_observations = sample[:, :, 0:]
         predicted_observation_trajectories = self.normalizer.unnormalize(
             normalized_observations,
-            'observations',
+            "observations",
         )
 
         predictions = []
@@ -94,7 +97,9 @@ class MazePolicy:
 
         return predictions, selected_trajectories
 
-    def generate_conditioned_trajectory(self, planner_inputs, debug=False, batch_size=1):
+    def generate_conditioned_trajectory(
+        self, planner_inputs, debug=False, batch_size=1
+    ):
         start_time = time.time()
         predictions, _ = self.generate_conditioned_trajectories_parallel(
             planner_inputs,
@@ -104,5 +109,3 @@ class MazePolicy:
         assert len(predictions) == 1
         self.prediction_time_history.append([1, time.time() - start_time])
         return predictions[0]
-
-    
