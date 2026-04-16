@@ -355,6 +355,18 @@ class WeightedStateL2(WeightedStateLoss):
 ## -----------------------------------------------------
 
 
+class Conv1dBlockDd(Conv1dBlock_dd):
+    pass
+
+
+class WeightedLossL2V2(WeightedLoss_L2_V2):
+    pass
+
+
+class WeightedLossL2InvDynV3(WeightedLoss_L2_InvDyn_V3):
+    pass
+
+
 Losses = {
     "l1": WeightedL1,
     "l2": WeightedL2,
