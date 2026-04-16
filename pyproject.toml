@@ -1,0 +1,60 @@
+[build-system]
+requires = ["hatchling>=1.25.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "comp-diffuser"
+version = "0.1.0"
+description = "Maze2D-focused diffusion planning and trajectory stitching research code."
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+license = { text = "MIT" }
+dependencies = [
+  "colorama>=0.4.6",
+  "einops>=0.8.0",
+  "gitpython>=3.1.37",
+  "gym==0.23.1",
+  "gymnasium>=1.2.3",
+  "gymnasium-robotics>=1.4.2",
+  "h5py>=3.12.1",
+  "imageio>=2.36.0",
+  "matplotlib>=3.7.2",
+  "minari>=0.5.3",
+  "mujoco>=3.2.6",
+  "numpy>=1.26.4,<3",
+  "scikit-video>=1.1.11",
+  "scipy>=1.11.1",
+  "termcolor>=2.4.0",
+  "torch>=2.5.0",
+  "tqdm>=4.65.0",
+  "typed-argument-parser>=1.10.0",
+  "wandb>=0.14.2",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0.0",
+  "ruff>=0.11.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/comp_diffuser"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+exclude = [
+  ".git",
+  ".pytest_cache",
+  ".ruff_cache",
+  "artifacts",
+  "conda_env",
+  "logs",
+]
+
+[tool.ruff.lint]
+extend-select = ["I"]

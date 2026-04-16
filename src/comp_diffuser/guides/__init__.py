@@ -1,0 +1,1 @@
+from comp_diffuser.rendering.maze_renderer import Maze2DRenderer
