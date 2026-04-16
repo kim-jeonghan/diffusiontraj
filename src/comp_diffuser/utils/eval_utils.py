@@ -2,6 +2,7 @@ import json
 import os
 import os.path as osp
 import sys
+import warnings
 from contextlib import contextmanager
 from datetime import datetime
 
@@ -161,9 +162,6 @@ def suppress_stdout():
         finally:
             # Restore stdout to its original state
             sys.stdout = old_stdout
-
-
-import warnings
 
 
 @contextmanager

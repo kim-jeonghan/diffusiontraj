@@ -195,7 +195,6 @@ def process_maze2d_episode(episode):
     adds in `next_observations` field to episode
     """
     assert "next_observations" not in episode
-    length = len(episode["observations"])
     next_observations = episode["observations"][1:].copy()
     for key, val in episode.items():
         episode[key] = val[:-1]

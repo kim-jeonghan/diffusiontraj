@@ -310,7 +310,6 @@ def blocks_add_kuka(observations):
     """
     observations : [ batch_size x horizon x 32 ]
     """
-    robot_dim = 7
     batch_size, horizon, _ = observations.shape
     observations = np.concatenate(
         [

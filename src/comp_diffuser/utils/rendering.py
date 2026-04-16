@@ -109,13 +109,7 @@ class MuJoCoRenderer:
         ## @TODO : clean up
         self.observation_dim = np.prod(self.env.observation_space.shape) - 1
         self.action_dim = np.prod(self.env.action_space.shape)
-        try:
-            self.viewer = mjc.MjRenderContextOffscreen(self.env.sim)
-        except:
-            print(
-                "[ utils/rendering ] Warning: could not initialize offscreen renderer"
-            )
-            self.viewer = None
+        self.viewer = None
 
     def pad_observation(self, observation):
         state = np.concatenate(

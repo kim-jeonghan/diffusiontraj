@@ -3,7 +3,10 @@ import os
 import pickle
 from collections import namedtuple
 
+import numpy as np
 import torch
+
+from ..datasets.normalization import DatasetNormalizer
 
 DiffusionExperiment = namedtuple(
     "Diffusion", "dataset renderer model diffusion ema trainer epoch"
@@ -75,11 +78,6 @@ def load_diffusion(*loadpath, epoch="latest", device="cuda:0", ld_config={}):
     return DiffusionExperiment(
         dataset, renderer, model, diffusion, trainer.ema_model, trainer, epoch
     )
-
-
-import numpy as np
-
-from ..datasets.normalization import DatasetNormalizer
 
 
 def load_comp_datasetNormalizer(

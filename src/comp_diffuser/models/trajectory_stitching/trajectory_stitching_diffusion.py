@@ -3,8 +3,7 @@ import numpy as np
 import torch
 from torch import nn
 
-import comp_diffuser.utils as utils
-
+from ...utils.eval_utils import print_color
 from ..common.model_outputs import ModelPrediction
 from ..helpers import (
     Losses,
@@ -130,9 +129,9 @@ class TrajectoryStitchingGaussianDiffusionWithInverseDynamics(nn.Module):
         self.var_temp = 1.0
         self.tr_inpat_prob = self.diff_config["tr_inpat_prob"]
         self.tr_ovlp_prob = self.diff_config["tr_ovlp_prob"]
-        utils.print_color(f"{self.diff_config['tr_1side_drop_prob']=}")
+        print_color(f"{self.diff_config['tr_1side_drop_prob']=}")
         self.tr_no_ovlp_none = self.diff_config.get("tr_no_ovlp_none", False)
-        utils.print_color(f"{self.tr_no_ovlp_none=}")
+        print_color(f"{self.tr_no_ovlp_none=}")
         assert self.tr_inpat_prob + self.tr_ovlp_prob == 1.0
 
         ## ----- Dec 3, for DDIM -----
