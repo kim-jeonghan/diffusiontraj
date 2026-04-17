@@ -6,10 +6,10 @@ from torch import nn
 from ...utils.arrays import batch_repeat_tensor_in_dict
 from ...utils.eval_utils import print_color
 from ..common.model_outputs import ModelPrediction
+from ..common.schedule import DiffusionSchedule
 from ..helpers import (
     Losses,
     apply_conditioning,
-    cosine_beta_schedule,
     extract_2d,
 )
 from ..hi_helpers import MLP_InvDyn
@@ -41,54 +41,10 @@ class TrajectoryStitchingGaussianDiffusionWithInverseDynamics(nn.Module):
         self.transition_dim = observation_dim + action_dim
         self.model = model
 
-        betas = cosine_beta_schedule(n_timesteps)
-        alphas = 1.0 - betas
-        alphas_cumprod = torch.cumprod(alphas, axis=0)
-        alphas_cumprod_prev = torch.cat([torch.ones(1), alphas_cumprod[:-1]])
-
-        self.n_timesteps = int(n_timesteps)
+        self.schedule = DiffusionSchedule(n_timesteps)
+        self.n_timesteps = self.schedule.n_timesteps
         self.clip_denoised = clip_denoised
         self.predict_epsilon = predict_epsilon
-
-        self.register_buffer("betas", betas)
-        self.register_buffer("alphas_cumprod", alphas_cumprod)
-        self.register_buffer("alphas_cumprod_prev", alphas_cumprod_prev)
-
-        # calculations for diffusion q(x_t | x_{t-1}) and others
-        self.register_buffer("sqrt_alphas_cumprod", torch.sqrt(alphas_cumprod))
-        self.register_buffer(
-            "sqrt_one_minus_alphas_cumprod", torch.sqrt(1.0 - alphas_cumprod)
-        )
-        self.register_buffer(
-            "log_one_minus_alphas_cumprod", torch.log(1.0 - alphas_cumprod)
-        )
-        self.register_buffer(
-            "sqrt_recip_alphas_cumprod", torch.sqrt(1.0 / alphas_cumprod)
-        )
-        self.register_buffer(
-            "sqrt_recipm1_alphas_cumprod", torch.sqrt(1.0 / alphas_cumprod - 1)
-        )
-
-        # calculations for posterior q(x_{t-1} | x_t, x_0)
-        posterior_variance = (
-            betas * (1.0 - alphas_cumprod_prev) / (1.0 - alphas_cumprod)
-        )
-        self.register_buffer("posterior_variance", posterior_variance)
-
-        ## log calculation clipped because the posterior variance
-        ## is 0 at the beginning of the diffusion chain
-        self.register_buffer(
-            "posterior_log_variance_clipped",
-            torch.log(torch.clamp(posterior_variance, min=1e-20)),
-        )
-        self.register_buffer(
-            "posterior_mean_coef1",
-            betas * np.sqrt(alphas_cumprod_prev) / (1.0 - alphas_cumprod),
-        )
-        self.register_buffer(
-            "posterior_mean_coef2",
-            (1.0 - alphas_cumprod_prev) * np.sqrt(alphas) / (1.0 - alphas_cumprod),
-        )
 
         self.obs_manual_loss_weights = diff_config["obs_manual_loss_weights"]
 
@@ -144,7 +100,7 @@ class TrajectoryStitchingGaussianDiffusionWithInverseDynamics(nn.Module):
                 ],
             )
             if ddim_set_alpha_to_one
-            else torch.clone(self.alphas_cumprod[0:1])
+            else torch.clone(self.schedule.alphas_cumprod[0:1])
         )  # tensor of size (1,)
         self.num_train_timesteps = self.n_timesteps
         self.ddim_num_inference_steps = self.diff_config.get("ddim_steps", 50)
@@ -227,8 +183,8 @@ class TrajectoryStitchingGaussianDiffusionWithInverseDynamics(nn.Module):
             ## directly switch to 2d version
             return (
                 ## B,H,1 * B,H,dim
-                extract_2d(self.sqrt_recip_alphas_cumprod, t_2d, x_t.shape) * x_t
-                - extract_2d(self.sqrt_recipm1_alphas_cumprod, t_2d, x_t.shape) * noise
+                extract_2d(self.schedule.sqrt_recip_alphas_cumprod, t_2d, x_t.shape) * x_t
+                - extract_2d(self.schedule.sqrt_recipm1_alphas_cumprod, t_2d, x_t.shape) * noise
             )
         else:
             return noise
@@ -240,14 +196,14 @@ class TrajectoryStitchingGaussianDiffusionWithInverseDynamics(nn.Module):
         # pdb.set_trace() ## check buffer dim
         ## directly, e.g., 10,384,6
         posterior_mean = (
-            extract_2d(self.posterior_mean_coef1, t, x_t.shape) * x_start
-            + extract_2d(self.posterior_mean_coef2, t, x_t.shape) * x_t
+            extract_2d(self.schedule.posterior_mean_coef1, t, x_t.shape) * x_start
+            + extract_2d(self.schedule.posterior_mean_coef2, t, x_t.shape) * x_t
         )
         ## now 2D, not 1D in vanilla diffusion
         ## both two e.g., [B=10, H=384, 1]
-        posterior_variance = extract_2d(self.posterior_variance, t, x_t.shape)
+        posterior_variance = extract_2d(self.schedule.posterior_variance, t, x_t.shape)
         posterior_log_variance_clipped = extract_2d(
-            self.posterior_log_variance_clipped, t, x_t.shape
+            self.schedule.posterior_log_variance_clipped, t, x_t.shape
         )
         return posterior_mean, posterior_variance, posterior_log_variance_clipped
 
@@ -435,7 +391,7 @@ class TrajectoryStitchingGaussianDiffusionWithInverseDynamics(nn.Module):
         """
         Temporal, assume when inference, in one step, all t are the same
         """
-        device = self.betas.device
+        device = self.schedule.betas.device
 
         batch_size = shape[0]
         x = self.var_temp * torch.randn(shape, device=device)
@@ -538,8 +494,8 @@ class TrajectoryStitchingGaussianDiffusionWithInverseDynamics(nn.Module):
         # )
 
         ## Ours: t (B, H, 1) * x_start (B, H, dim)
-        q_coef1 = extract_2d(self.sqrt_alphas_cumprod, t_2d, x_start.shape)
-        q_coef2 = extract_2d(self.sqrt_one_minus_alphas_cumprod, t_2d, x_start.shape)
+        q_coef1 = extract_2d(self.schedule.sqrt_alphas_cumprod, t_2d, x_start.shape)
+        q_coef2 = extract_2d(self.schedule.sqrt_one_minus_alphas_cumprod, t_2d, x_start.shape)
 
         ## when t=0, 0.9999 * x_start + 0.0137 * noise
         sample = q_coef1 * x_start + q_coef2 * noise
@@ -1045,8 +1001,8 @@ class TrajectoryStitchingGaussianDiffusionWithInverseDynamics(nn.Module):
 
     def predict_noise_from_start(self, x_t, t_2d, x0):
         return (
-            extract_2d(self.sqrt_recip_alphas_cumprod, t_2d, x_t.shape) * x_t - x0
-        ) / extract_2d(self.sqrt_recipm1_alphas_cumprod, t_2d, x_t.shape)
+            extract_2d(self.schedule.sqrt_recip_alphas_cumprod, t_2d, x_t.shape) * x_t - x0
+        ) / extract_2d(self.schedule.sqrt_recipm1_alphas_cumprod, t_2d, x_t.shape)
 
     def model_predictions(self, x, t_2d, segment_conditioning: dict):
         # out_pred = self.comp_model_pred(x, t_2d)
@@ -1111,7 +1067,7 @@ class TrajectoryStitchingGaussianDiffusionWithInverseDynamics(nn.Module):
 
         print_color(f"ddim steps: {self.ddim_num_inference_steps}", c="y")
 
-        device = self.betas.device
+        device = self.schedule.betas.device
         batch_size = shape[0]
         x = self.var_temp * torch.randn(shape, device=device)
         # x = apply_conditioning(x, cond, 0) # start from dim 0, different from diffuser
@@ -1177,14 +1133,14 @@ class TrajectoryStitchingGaussianDiffusionWithInverseDynamics(nn.Module):
             timesteps - self.num_train_timesteps // self.ddim_num_inference_steps
         )
         # # 2. compute alphas, betas
-        alpha_prod_t = extract_2d(self.alphas_cumprod, timesteps, x.shape)  #
+        alpha_prod_t = extract_2d(self.schedule.alphas_cumprod, timesteps, x.shape)  #
 
         # pdb.set_trace()
 
         assert torch.isclose(prev_timestep[0,], prev_timestep[0, 0]).all()
         if prev_timestep[0, 0] >= 0:
             alpha_prod_t_prev = extract_2d(
-                self.alphas_cumprod, prev_timestep, x.shape
+                self.schedule.alphas_cumprod, prev_timestep, x.shape
             )  # tensor
         else:
             # extract from a tensor of size 1, cuda tensor [80, 1, 1]
@@ -1297,7 +1253,7 @@ class TrajectoryStitchingGaussianDiffusionWithInverseDynamics(nn.Module):
         assert (
             num_segments >= 2 and not do_mcmc
         ), "mcmc might be bad in our case and not implemented for DDIM yet."
-        device = self.betas.device
+        device = self.schedule.betas.device
 
         batch_size = shape[0]
         horizon = shape[1]
@@ -1493,7 +1449,7 @@ class TrajectoryStitchingGaussianDiffusionWithInverseDynamics(nn.Module):
         assert (
             num_segments >= 2 and not do_mcmc
         ), "mcmc might be bad in our case and not implemented for DDIM yet."
-        device = self.betas.device
+        device = self.schedule.betas.device
 
         batch_size = shape[0]
         horizon = shape[1]
@@ -1689,7 +1645,7 @@ class TrajectoryStitchingGaussianDiffusionWithInverseDynamics(nn.Module):
         assert (
             num_segments >= 2 and not do_mcmc
         ), "mcmc might be bad in our case and not implemented for DDIM yet."
-        device = self.betas.device
+        device = self.schedule.betas.device
 
         batch_size = shape[0]
         horizon = shape[1]
@@ -1919,7 +1875,7 @@ class TrajectoryStitchingGaussianDiffusionWithInverseDynamics(nn.Module):
         assert (
             n_comp >= 2 and not do_mcmc
         ), "mcmc might be bad in our case and not implemented for DDIM yet."
-        device = self.betas.device
+        device = self.schedule.betas.device
 
         batch_size = shape[0]
         hzn = shape[1]
@@ -2165,7 +2121,7 @@ class TrajectoryStitchingGaussianDiffusionWithInverseDynamics(nn.Module):
         assert (
             num_segments >= 2 and not do_mcmc
         ), "mcmc might be bad in our case and not implemented for DDIM yet."
-        device = self.betas.device
+        device = self.schedule.betas.device
 
         batch_size = shape[0]
         horizon = shape[1]
