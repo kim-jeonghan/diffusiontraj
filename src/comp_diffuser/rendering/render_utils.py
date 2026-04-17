@@ -1,3 +1,5 @@
+from collections.abc import Sequence
+
 import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import numpy as np
@@ -79,7 +81,7 @@ def plot_maze_layout(ax, maze_grid):
 
 def plot_start_goal(
     ax,
-    start_goal: None,
+    start_goal: Sequence[np.ndarray | Sequence[float]],
     sg_color="black",
     size_out_cicle=0.26,
     size_in_st=0.135,
@@ -151,7 +153,7 @@ def make_traj_images(
     trajs_list=None,
     sp_xy_3=None,
     sp_xy_4=None,
-    trajs_ball: list = None,
+    trajs_ball: list[np.ndarray] | None = None,
     fig_dpi=100,
     main_tj_cmap="Reds",
     is_plot_main_tj=True,
@@ -206,6 +208,9 @@ def make_traj_images(
                 maze_grid = get_maze_grid_from_id(env_id)
             else:
                 maze_grid = None
+
+        if maze_grid is None:
+            raise ValueError("Maze rendering requires a valid maze grid.")
 
         ## important: luo update 13:22, July23
         f_h = len(maze_grid[0]) * bg_scale

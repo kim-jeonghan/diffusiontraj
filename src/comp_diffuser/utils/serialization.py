@@ -9,7 +9,7 @@ import torch
 from ..datasets.normalization import DatasetNormalizer
 
 DiffusionExperiment = namedtuple(
-    "Diffusion", "dataset renderer model diffusion ema trainer epoch"
+    "DiffusionExperiment", "dataset renderer model diffusion ema trainer epoch"
 )
 
 

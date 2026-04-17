@@ -29,7 +29,7 @@ class MazePolicy:
         )
         self.plan_horizon = policy_config["plan_horizon"]
         self.diffusion_model.horizon = self.plan_horizon
-        self.prediction_time_history = []
+        self.prediction_time_history: list[float] = []
         self.return_diffusion = False
 
     @property

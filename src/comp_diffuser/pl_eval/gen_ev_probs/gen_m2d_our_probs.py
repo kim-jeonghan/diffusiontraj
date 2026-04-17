@@ -5,7 +5,7 @@ import warnings
 import h5py
 import numpy as np
 import torch
-import yaml
+import yaml  # type: ignore[import-untyped]
 from tap import Tap
 
 from ...utils.eval_utils import print_color

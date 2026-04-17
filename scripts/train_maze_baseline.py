@@ -18,7 +18,7 @@ torch.set_printoptions(precision=4, sci_mode=False)
 
 
 class ArgsParser(BaseArgsParser):
-    dataset: str = None
+    dataset: str | None = None
     config: str
 
 

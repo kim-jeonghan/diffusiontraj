@@ -1,3 +1,5 @@
 from collections import namedtuple
 
-InverseDynamicsTrajectories = namedtuple("Trajectories", "actions observations")
+InverseDynamicsTrajectories = namedtuple(
+    "InverseDynamicsTrajectories", "actions observations"
+)

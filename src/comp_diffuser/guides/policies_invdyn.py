@@ -5,7 +5,9 @@ import torch
 
 from ..utils.arrays import apply_dict, to_np, to_torch
 
-InverseDynamicsTrajectories = namedtuple("Trajectories", "actions observations")
+InverseDynamicsTrajectories = namedtuple(
+    "InverseDynamicsTrajectories", "actions observations"
+)
 # GuidedTrajectories = namedtuple('GuidedTrajectories', 'actions observations value')
 
 

@@ -5,7 +5,7 @@ import warnings
 import h5py
 import numpy as np
 import torch
-import yaml
+import yaml  # type: ignore[import-untyped]
 from maze2d_eval_problem_utils import (
     m2d_rand_sample_probs,
     merge_prob_dicts,

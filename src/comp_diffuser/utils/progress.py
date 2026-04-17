@@ -169,13 +169,13 @@ class Silent:
 
 if __name__ == "__main__":
     silent = Silent()
-    silent.update()
+    silent.update([])
     silent.stamp()
 
     num_steps = 1000
     progress = Progress(num_steps)
     for i in range(num_steps):
-        progress.update()
+        progress.update([])
         params = [
             ["A", "{:06d}".format(i)],
             ["B", "{:06d}".format(i)],

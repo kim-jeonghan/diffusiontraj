@@ -17,8 +17,8 @@ torch.use_deterministic_algorithms(True)
 
 
 class ArgsParser(BaseArgsParser):
-    dataset: str = None
-    config: str = None
+    dataset: str | None = None
+    config: str | None = None
     ## should not put any existing var in config here
     pl_seeds: str = "-1"  # no seed
     # num_segments: int = 2

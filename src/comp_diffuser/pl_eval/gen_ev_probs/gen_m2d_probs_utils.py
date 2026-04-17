@@ -35,15 +35,16 @@ def merge_prob_dicts(prob_dicts: list[dict]):
     """
     prob_dicts: list of dict
     """
-    mg_prob_dict = {k: [] for k in prob_dicts[0].keys()}
+    mg_prob_lists: dict[str, list[np.ndarray]] = {k: [] for k in prob_dicts[0].keys()}
     ## loop through the list of dict
     for p_d in prob_dicts:
         assert set(p_d.keys()) == {"start_state", "goal_pos"}
         for k in p_d.keys():
             ## list of np2d
-            mg_prob_dict[k].append(p_d[k])
-    for kk in mg_prob_dict.keys():
-        mg_prob_dict[kk] = np.concatenate(mg_prob_dict[kk], axis=0)
+            mg_prob_lists[k].append(p_d[k])
+    mg_prob_dict = {
+        key: np.concatenate(values, axis=0) for key, values in mg_prob_lists.items()
+    }
     # pdb.set_trace()
 
     return mg_prob_dict
