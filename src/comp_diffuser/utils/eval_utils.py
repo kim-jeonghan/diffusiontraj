@@ -82,6 +82,11 @@ def ben_get_m2d_spec(dset_type):
     return maze_x_map_center, maze_y_map_center, maze_size_scaling
 
 
+def ben_get_m2d_grid_shape(dset_type):
+    maze_x_map_center, maze_y_map_center, _ = ben_get_m2d_spec(dset_type)
+    return int(maze_y_map_center * 2), int(maze_x_map_center * 2)
+
+
 def ben_xy_to_luo_rowcol(dset_type: str, trajs: np.ndarray):
     """
     xy_pos: is the position in mujoco, np 1d or 2d (h,2) or 3d (B,h,2)
@@ -109,6 +114,21 @@ def ben_xy_to_luo_rowcol(dset_type: str, trajs: np.ndarray):
         ],
         axis=-1,
     )
+
+
+def select_maze_render_coords(dset_type: str, trajs: np.ndarray):
+    """Pick raw or converted coordinates based on maze-grid visibility."""
+
+    assert trajs.shape[-1] == 2
+    converted = ben_xy_to_luo_rowcol(dset_type, trajs)
+    n_rows, n_cols = ben_get_m2d_grid_shape(dset_type)
+
+    def in_bounds_ratio(values):
+        row_ok = np.logical_and(values[..., 0] >= 0.5, values[..., 0] <= n_rows + 0.5)
+        col_ok = np.logical_and(values[..., 1] >= 0.5, values[..., 1] <= n_cols + 0.5)
+        return np.logical_and(row_ok, col_ok).mean()
+
+    return trajs if in_bounds_ratio(trajs) >= in_bounds_ratio(converted) else converted
 
 
 def ben_luo_rowcol_to_xy(dset_type: str, trajs: np.ndarray):

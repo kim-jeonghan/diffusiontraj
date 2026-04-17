@@ -8,7 +8,7 @@ def test_maze2d_ben_dataset_loads():
     d4rl = importlib.import_module("comp_diffuser.datasets.d4rl")
 
     env = d4rl.load_env_gym_robo("maze2d-umaze-v1")
-    env.dset_h5path = str(ROOT / "data/smoke/maze2d-umaze-sparse-v1-smoke.hdf5")
+    env.dset_h5path = str(ROOT / "data/m2d/maze2d-umaze-sparse-v1-smoke.hdf5")
 
     dataset = d4rl.get_dataset(env)
 

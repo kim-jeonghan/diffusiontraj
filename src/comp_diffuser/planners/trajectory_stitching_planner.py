@@ -16,11 +16,11 @@ from ..utils.composition.composition_serialization import (
 )
 from ..utils.eval_utils import (
     ben_luo_rowcol_to_xy,
-    ben_xy_to_luo_rowcol,
     print_color,
     rename_fn,
     save_img,
     save_json,
+    select_maze_render_coords,
 )
 from ..utils.planning_config import extract_planner_runtime_config
 from ..utils.serialization import mkdir
@@ -548,9 +548,9 @@ class TrajectoryStitchingMazePlanner:
             )
 
             ## for vis, we need to transform to cell-idx coordinate
-            pick_tj_ep = ben_xy_to_luo_rowcol(self.dset_type, pick_tj_ep)
+            pick_tj_ep = select_maze_render_coords(self.dset_type, pick_tj_ep)
             rollout = np.array(rollout)
-            rollout[:, :2] = ben_xy_to_luo_rowcol(self.dset_type, rollout[:, :2])
+            rollout[:, :2] = select_maze_render_coords(self.dset_type, rollout[:, :2])
 
             ## ---------------------------------------------------
             ## ------------ Finished one eval episode ------------

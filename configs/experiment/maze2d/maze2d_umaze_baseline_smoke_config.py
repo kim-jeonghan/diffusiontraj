@@ -40,7 +40,7 @@ base = {
     "dataset": "maze2d-umaze-v1",
     ## TODO:
     # 'dset_h5path': 'data/data_hdf5_ben/ben-maze2d-umaze-sparse-v1.hdf5', #####
-    "dset_h5path": "data/smoke/maze2d-umaze-sparse-v1-smoke.hdf5",
+    "dset_h5path": "data/m2d/maze2d-umaze-sparse-v1-smoke.hdf5",
     "diffusion": {
         "config_fn": "",
         "sm_horizon": sm_horizon,

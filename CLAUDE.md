@@ -115,4 +115,4 @@ artifacts/runs/<dataset>/<exp_name>/
     00_rollout.json        # per-episode metrics
 ```
 
-Local data lives in `data/smoke/` (bundled HDF5 for tests) and `data/eval_problems/` (planning start/goal sets).
+Local data lives in `data/m2d/` (bundled Maze2D HDF5 for tests) and `data/eval_problems/` (planning start/goal sets).
