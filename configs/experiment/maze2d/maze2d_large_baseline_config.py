@@ -88,7 +88,7 @@ base = {
         "preprocess_fns": ["ben_maze2d_set_terminals"],  ####
         "clip_denoised": True,
         "use_padding": True,
-        "max_path_length": 500,
+        "max_path_length": 640,
         "max_n_episodes": 21500,
         "dataset_config": dict(
             obs_select_dim=(0, 1),

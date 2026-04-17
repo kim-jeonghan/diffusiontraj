@@ -89,6 +89,9 @@ class TrajectoryStitchingTrainer(object):
             return
         self.ema.update_model_average(self.ema_model, self.model)
 
+    def supports_overlap_conditioning(self):
+        return hasattr(self.ema_model, "extract_ovlp_from_full")
+
     # -----------------------------------------------------------------------------#
     # ------------------------------------ api ------------------------------------#
     # -----------------------------------------------------------------------------#
@@ -151,19 +154,20 @@ class TrajectoryStitchingTrainer(object):
                 self.ema_model.eval()
                 self.render_samples(n_samples=self.n_samples, conditioning_mode=False)
                 self.render_samples(
-                    n_samples=self.n_samples, conditioning_mode="overlap_only"
-                )
-                self.render_samples(
                     n_samples=self.n_samples, conditioning_mode="boundary_only"
                 )
-                self.render_samples(
-                    n_samples=self.n_samples,
-                    conditioning_mode="start_boundary_end_overlap",
-                )
-                self.render_samples(
-                    n_samples=self.n_samples,
-                    conditioning_mode="start_overlap_goal_boundary",
-                )
+                if self.supports_overlap_conditioning():
+                    self.render_samples(
+                        n_samples=self.n_samples, conditioning_mode="overlap_only"
+                    )
+                    self.render_samples(
+                        n_samples=self.n_samples,
+                        conditioning_mode="start_boundary_end_overlap",
+                    )
+                    self.render_samples(
+                        n_samples=self.n_samples,
+                        conditioning_mode="start_overlap_goal_boundary",
+                    )
 
                 self.ema_model.train()
                 if self.step > 5e5:  ## less sampling, faster training
@@ -363,19 +367,21 @@ class TrajectoryStitchingTrainer(object):
                 )
                 ## convert from Ben's format
                 traj_full_unnorm = self.get_rowcol_obs_trajs(traj_full_unnorm)
-                # pdb.set_trace()
-                st_traj_un, end_traj_un = self.ema_model.extract_ovlp_from_full(
-                    traj_full_unnorm
-                )
-                # sp_xy_1 = torch.cat([st_traj, end_traj], dim=1)
-                # pdb.set_trace()
-                self.renderer.composite(
-                    savepath,
-                    observations,
-                    is_non_keypt=is_non_keypt,
-                    sp_xy_1=st_traj_un,
-                    sp_xy_2=end_traj_un,
-                )
+                if self.supports_overlap_conditioning():
+                    st_traj_un, end_traj_un = self.ema_model.extract_ovlp_from_full(
+                        traj_full_unnorm
+                    )
+                    self.renderer.composite(
+                        savepath,
+                        observations,
+                        is_non_keypt=is_non_keypt,
+                        sp_xy_1=st_traj_un,
+                        sp_xy_2=end_traj_un,
+                    )
+                else:
+                    self.renderer.composite(
+                        savepath, observations, is_non_keypt=is_non_keypt
+                    )
             else:
                 self.renderer.composite(
                     savepath, observations, is_non_keypt=is_non_keypt
