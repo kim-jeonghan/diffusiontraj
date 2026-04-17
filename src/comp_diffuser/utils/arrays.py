@@ -66,13 +66,19 @@ def batchify(batch):
             1) converting np arrays to torch tensors and
             2) and ensuring that everything has a batch dimension
     """
-    fn = lambda x: to_torch(x[None])
+
+    def add_batch_dim_and_convert(x):
+        return to_torch(x[None])
 
     batched_vals = []
     for field in batch._fields:
         val = getattr(batch, field)
-        val = apply_dict(fn, val) if type(val) is dict else fn(val)
+        if isinstance(val, dict):
+            val = apply_dict(add_batch_dim_and_convert, val)
+        else:
+            val = add_batch_dim_and_convert(val)
         batched_vals.append(val)
+
     return type(batch)(*batched_vals)
 
 

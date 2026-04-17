@@ -5,6 +5,7 @@ import wandb
 from comp_diffuser.utils.arrays import batch_copy, batchify, report_parameters
 from comp_diffuser.utils.config import Config
 from comp_diffuser.utils.setup import ArgsParser as BaseArgsParser
+
 from .trajectory_stitching_trainer import TrajectoryStitchingTrainer
 
 np.set_printoptions(precision=3, suppress=True)

@@ -80,9 +80,7 @@ def load_diffusion(*loadpath, epoch="latest", device="cuda:0", ld_config={}):
     )
 
 
-def load_comp_datasetNormalizer(
-    args_train,
-):
+def load_comp_datasetNormalizer(args_train):
     """h5path: path to train dataset
     normalizer: a class
     """

@@ -28,9 +28,6 @@ args = ArgsParser().parse_args("diffusion")
 # -----------------------------------------------------------------------------#
 # ---------------------------------- dataset ----------------------------------#
 # -----------------------------------------------------------------------------#
-
-# pdb.set_trace()
-
 dataset_config = Config(
     args.loader,
     savepath=(args.savepath, "dataset_config.pkl"),
@@ -84,8 +81,6 @@ model_config = Config(
 )
 model = model_config()
 
-# pdb.set_trace()
-
 
 ## model to be input
 diffusion_model_config = Config(
@@ -111,9 +106,6 @@ diffusion_model_config = Config(
 
 
 #############
-# pdb.set_trace()
-
-
 trainer_config = Config(
     MazeTrainer,
     savepath=(args.savepath, "trainer_config.pkl"),
@@ -144,9 +136,6 @@ trainer = trainer_config(
     renderer=renderer,
     device=args.device,
 )
-
-# pdb.set_trace()
-
 # -----------------------------------------------------------------------------#
 # ------------------------ test forward & backward pass -----------------------#
 # -----------------------------------------------------------------------------#

@@ -17,19 +17,72 @@ This installs the package, test dependencies, and lint tooling into the managed 
 Core repository structure:
 
 - `src/comp_diffuser/`: library code
-- `src/comp_diffuser/datasets/`: dataset loading, preprocessing, normalization
-- `src/comp_diffuser/models/`: diffusion, stitching, and helper modules
-- `src/comp_diffuser/planners/`: planning policies and trajectory blending helpers
-- `src/comp_diffuser/trainers/`: training loops
-- `src/comp_diffuser/rendering/`: Maze2D rendering utilities
-- `src/comp_diffuser/utils/`: shared config, serialization, logging, and array helpers
 - `scripts/`: runnable train and planning entrypoints
 - `configs/experiment/maze2d/`: Maze2D experiment configs
 - `tests/`: smoke and regression tests
 - `data/`: local datasets and planning problem files
-- `artifacts/runs/`: generated checkpoints, configs, and evaluation outputs
+- `artifacts/runs/`: generated checkpoints, config snapshots, and planning outputs
 
-## Smoke Run
+## Train
+
+Baseline diffusion training:
+
+```bash
+WANDB_MODE=disabled \
+uv run python scripts/train_maze_baseline.py \
+  --config configs/experiment/maze2d/maze2d_umaze_baseline_config.py \
+  --device cpu
+```
+
+Trajectory stitching training:
+
+```bash
+WANDB_MODE=disabled \
+uv run python scripts/train_trajectory_stitching.py \
+  --config configs/experiment/maze2d/maze2d_umaze_baseline_config.py \
+  --device cpu
+```
+
+Useful config variants:
+
+- `configs/experiment/maze2d/maze2d_umaze_baseline_smoke_config.py`
+- `configs/experiment/maze2d/maze2d_umaze_baseline_config.py`
+- `configs/experiment/maze2d/maze2d_medium_baseline_config.py`
+- `configs/experiment/maze2d/maze2d_large_baseline_config.py`
+
+`--config` is the main experiment selector. CLI flags such as `--device cpu` override the values loaded from the config file.
+
+## Plan
+
+Planning expects an existing training run and loads the latest checkpoint from the matching diffusion run directory.
+
+Maze baseline planning:
+
+```bash
+uv run python scripts/plan_maze_baseline.py \
+  --config configs/experiment/maze2d/maze2d_umaze_baseline_config.py \
+  --device cpu \
+  --plan_n_ep 1
+```
+
+Trajectory stitching planning:
+
+```bash
+uv run python scripts/plan_trajectory_stitching.py \
+  --config configs/experiment/maze2d/maze2d_umaze_baseline_config.py \
+  --device cpu \
+  --plan_n_ep 1
+```
+
+Notes:
+
+- `--plan_n_ep 1` is a minimal sanity run. `-100` means "all episodes" in the current planning scripts.
+- The planning scripts resolve `diffusion_epoch=latest` by scanning the corresponding training run directory.
+- The planning save directory is created under the plan config save path and then extended with a timestamped subdirectory such as `YYMMDD-HHMMSS-mmm-nm1-phzn160-...`.
+
+## Smoke Test
+
+Minimal training smoke test:
 
 ```bash
 DIFFUSER_DEVICE=cpu \
@@ -46,69 +99,73 @@ Expected end of output:
 Testing forward... ✓
 ```
 
-## Train
-
-Maze2D umaze baseline example:
+Repo smoke/regression tests:
 
 ```bash
-WANDB_MODE=disabled \
-uv run python scripts/train_maze_baseline.py \
-  --config configs/experiment/maze2d/maze2d_umaze_baseline_config.py \
-  --device cpu
+uv run pytest -q tests/test_maze2d_smoke.py tests/test_planning_config_schema.py
 ```
 
-Trajectory stitching training example:
+What these cover:
 
-```bash
-WANDB_MODE=disabled \
-uv run python scripts/train_trajectory_stitching.py \
-  --config configs/experiment/maze2d/maze2d_umaze_baseline_config.py \
-  --device cpu
+- `tests/test_maze2d_smoke.py`: local smoke dataset loading
+- `tests/test_planning_config_schema.py`: readable planning/policy config key compatibility
+
+## Artifacts
+
+Training and planning both write under `artifacts/runs/<dataset>/<exp_name>/...`.
+
+Typical training directory:
+
+```text
+artifacts/runs/maze2d-umaze-v1/
+  diffusion/maze2d_umaze_baseline_smoke_config_T512/
+    args.json
+    dataset_config.pkl
+    render_config.pkl
+    model_config.pkl
+    model_config.txt
+    diffusion_model.pkl
+    trainer_config.pkl
+    ...
 ```
 
-Training writes run outputs under `artifacts/runs/...`, including saved config snapshots and model artifacts through `args.savepath`.
+Important output conventions:
 
-## Plan
+- `args.json`: parsed runtime arguments after config loading and CLI overrides
+- `*_config.pkl`: serialized constructor configs used to recreate datasets, models, and trainers
+- `model_config.txt`: text dump for quick inspection
+- trainer outputs: checkpoints, sampled renders, and other training-time outputs written into the same run folder
+- planning outputs: timestamped subdirectories containing rollout summaries such as `00_rollout.json`, rendered media, and run summary JSON files
 
-Planning uses a training config plus the latest saved checkpoint in the corresponding run directory.
+Local data paths used by the repo:
 
-Maze baseline planning example:
-
-```bash
-uv run python scripts/plan_maze_baseline.py \
-  --config configs/experiment/maze2d/maze2d_umaze_baseline_config.py \
-  --device cpu \
-  --plan_n_ep 1
-```
-
-Trajectory stitching planning example:
-
-```bash
-uv run python scripts/plan_trajectory_stitching.py \
-  --config configs/experiment/maze2d/maze2d_umaze_baseline_config.py \
-  --device cpu \
-  --plan_n_ep 1
-```
-
-Planning outputs are also written beneath `artifacts/runs/...` using the experiment save path plus a timestamped planning subdirectory.
-
-## Test
-
-```bash
-uv run pytest -q tests/test_maze2d_smoke.py
-```
-
-## Data and Artifacts
-
-Included smoke datasets:
-
-- `data/smoke/maze2d-umaze-sparse-v1-smoke.hdf5`
-- `data/smoke/maze2d-medium-sparse-v1-smoke.hdf5`
-- `data/smoke/maze2d-large-sparse-v1-smoke.hdf5`
-
-Other local paths used by the repository:
-
-- `data/smoke/`: small local datasets for quick validation
+- `data/smoke/`: bundled small HDF5 datasets for quick validation
 - `data/eval_problems/`: saved planning start/goal problem files
 - `scripts/eval_problems/`: helpers for generating Maze2D evaluation problem sets
-- `artifacts/runs/`: checkpoints, saved config pickles, renders, and planning outputs
+
+## Config Authoring Rules
+
+Use the existing Maze2D configs in `configs/experiment/maze2d/` as the template. Each config file exports a top-level `base` dictionary with at least:
+
+- `dataset`: Maze2D environment name
+- `dset_h5path`: local HDF5 dataset path
+- `diffusion`: training-time settings
+- `plan`: planning-time settings
+
+Rules to follow:
+
+- Keep both `diffusion` and `plan` blocks in the same file so train and plan share the same experiment identity.
+- Set `logbase` to `artifacts/runs` unless there is a strong reason to move outputs.
+- Keep `prefix` stable by task type: training uses `diffusion/`, planning uses `plans/release`.
+- Build `exp_name` with `watch(...)` so directory names stay deterministic and human-readable.
+- Keep `dataset`, `dset_h5path`, horizon values, and `n_diffusion_steps` aligned across `diffusion` and `plan`.
+- Use relative local paths for datasets and artifacts so the repo remains portable.
+- Put dataset-specific knobs inside `dataset_config`, model-specific knobs inside `network_config`, and diffusion-specific knobs inside `diff_config`.
+- Prefer adding a new config file over heavily branching one config with ad hoc conditionals.
+
+Current Maze2D config patterns:
+
+- `maze2d_umaze_baseline_smoke_config.py`: smallest local smoke run
+- `maze2d_umaze_baseline_config.py`: umaze baseline
+- `maze2d_medium_baseline_config.py`: medium horizon and medium smoke dataset
+- `maze2d_large_baseline_config.py`: large horizon and large smoke dataset

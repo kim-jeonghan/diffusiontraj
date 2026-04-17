@@ -416,7 +416,7 @@ def make_traj_images(
                 Sub_Traj_Colors
             ), f"{num_tj=}, smaller than the prepared colors"
             for i_tj, trajs_p in enumerate(trajs_list):
-                if sub_tj_colors == None:
+                if sub_tj_colors is None:
                     tmp_color_1 = Sub_Traj_Colors[i_tj]
                     tmp_color_2 = Sub_Sg_Colors[i_tj]
                     tmp_color_a = Sub_Traj_Alpha[i_tj]

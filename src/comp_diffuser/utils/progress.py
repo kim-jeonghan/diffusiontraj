@@ -123,8 +123,8 @@ class Progress:
             self._speed = string
         return string
 
-    def _chunk(self, l, n):
-        return [l[i : i + n] for i in range(0, len(l), n)]
+    def _chunk(self, seq, n):
+        return [seq[i : i + n] for i in range(0, len(seq), n)]
 
     def _format(self, chunks):
         lines = [self._format_chunk(chunk) for chunk in chunks]

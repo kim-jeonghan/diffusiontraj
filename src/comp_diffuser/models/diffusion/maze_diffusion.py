@@ -383,12 +383,10 @@ class MazeGaussianDiffusionWithInverseDynamics(nn.Module):
         """
         horizon = horizon or self.horizon
         shape = (batch_size, horizon, self.observation_dim)
-        g_cond = dict(do_cond=False)
-        ## placeholder
+        g_cond = dict(conditioning_mode=False)
 
         if self.infer_deno_type == "hi_fix_v1":
             raise NotImplementedError
-            # return self.p_sample_loop_hi_fix_v1(shape, cond, *args, **kwargs)
         elif self.infer_deno_type == "same":
             return self.p_sample_loop(shape, g_cond, *args, **kwargs)
         else:

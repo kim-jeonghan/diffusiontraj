@@ -284,7 +284,7 @@ class MazeTrainer(object):
             # pdb.set_trace()
 
             # [ 1 x 1 x observation_dim ]
-            normed_conditions = to_np(batch.conditions[0])[:, None]
+            # normed_conditions = to_np(batch.conditions[0])[:, None]
 
             ## [ n_samples x (horizon + 1) x observation_dim ]
             observations = self.dataset.normalizer.unnormalize(

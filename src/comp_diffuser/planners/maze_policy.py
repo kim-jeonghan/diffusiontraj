@@ -45,7 +45,7 @@ class MazePolicy:
         `planner_inputs["start_goal_pairs"]` is an unnormalized array shaped `(2, n_problems, dim)`.
         """
         horizon = self.diffusion_model.horizon
-        observation_dim = self.diffusion_model.observation_dim
+        # observation_dim = self.diffusion_model.observation_dim
 
         start_goal_pairs = planner_inputs["start_goal_pairs"]
         start_goal_pairs = torch.tensor(

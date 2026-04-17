@@ -47,7 +47,7 @@ class Maze2DEnvPlanner:
         if self.diffusion.uses_inverse_dynamics:
             self.policy = Policy_InvDyn(self.diffusion, self.dataset.normalizer)
         else:
-            self.policy = Policy(self.diffusion, self.dataset.normalizer)
+            raise NotImplementedError("non-inverse-dynamics planning is not supported")
         self.savepath = args.savepath
         self.epoch = diffusion_experiment.epoch
         self.pl_hzn = self.diffusion.horizon
