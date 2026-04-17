@@ -37,7 +37,7 @@ class MazeTemporalUNet(nn.Module):
         ## [(64,128), (128,256), (256,512)]
         in_out = list(zip(dims[:-1], dims[1:]))
         print_color(
-            f"[ models/TrajectoryStitchingTemporalUNet ] Channel dimensions: {in_out}",
+            f"[ models/StitchingTemporalUNet ] Channel dimensions: {in_out}",
             c="c",
         )
 

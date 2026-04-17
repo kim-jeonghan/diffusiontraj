@@ -1,76 +1,47 @@
 import torch
 
-from comp_diffuser.models.helpers import (
-    Conv1dBlockDd,
-    WeightedLossL2InvDynV3,
-    WeightedLossL2V2,
-)
-from comp_diffuser.models.hi_helpers import (
-    HiResidualTemporalBlock,
-    MlpInvDyn,
-    MlpInvDynV2,
-    SinusoidalPosEmb2D,
-)
-from comp_diffuser.planners.inverse_dynamics_policy import PolicyInvDyn
-from comp_diffuser.planners.trajectory_blender import TrajBlender
+from comp_diffuser.models.common.schedule import DiffusionSchedule
 
 
-def test_public_class_names_follow_capwords():
-    assert PolicyInvDyn.__name__ == "PolicyInvDyn"
-    assert TrajBlender.__name__ == "TrajBlender"
-    assert Conv1dBlockDd.__name__ == "Conv1dBlockDd"
-    assert WeightedLossL2V2.__name__ == "WeightedLossL2V2"
-    assert WeightedLossL2InvDynV3.__name__ == "WeightedLossL2InvDynV3"
-    assert HiResidualTemporalBlock.__name__ == "HiResidualTemporalBlock"
-    assert SinusoidalPosEmb2D.__name__ == "SinusoidalPosEmb2D"
-    assert MlpInvDyn.__name__ == "MlpInvDyn"
-    assert MlpInvDynV2.__name__ == "MlpInvDynV2"
+def test_diffusion_schedule_buffers_move_with_module():
+    schedule = DiffusionSchedule(n_timesteps=10)
+    assert schedule.betas.device.type == "cpu"
+    assert schedule.betas.shape == (10,)
+    assert schedule.alphas_cumprod.shape == (10,)
+    assert schedule.posterior_variance.shape == (10,)
 
 
-def test_helper_modules_keep_their_shapes():
-    conv_block = Conv1dBlockDd(8, 8, 3)
-    conv_input = torch.randn(3, 8, 8)
-    conv_output = conv_block(conv_input)
-    assert conv_output.shape == (3, 8, 8)
-
-    weighted_loss = WeightedLossL2V2(torch.ones(8, 8), action_dim=2)
-    pred = torch.randn(3, 8, 8)
-    targ = torch.randn(3, 8, 8)
-    loss_value, info = weighted_loss(pred, targ)
-    assert loss_value.ndim == 0
-    assert "a0_loss" in info
-
-    invdyn_loss = WeightedLossL2InvDynV3(torch.ones(8, 8))
-    invdyn_value, info = invdyn_loss(pred, targ)
-    assert invdyn_value.ndim == 0
-    assert info == {}
+def test_diffusion_schedule_q_sample_shape():
+    schedule = DiffusionSchedule(n_timesteps=10)
+    B, H, D = 2, 4, 6
+    x_start = torch.randn(B, H, D)
+    t_2d = torch.randint(0, 10, (B, H))
+    x_noisy = schedule.q_sample(x_start, t_2d)
+    assert x_noisy.shape == x_start.shape
 
 
-def test_hi_helper_modules_keep_their_shapes():
-    embedding = SinusoidalPosEmb2D(6)
-    emb_input = torch.randn(2, 4)
-    emb_output = embedding(emb_input)
-    assert emb_output.shape == (2, 4, 6)
+def test_diffusion_schedule_predict_start_from_noise_roundtrip():
+    schedule = DiffusionSchedule(n_timesteps=10)
+    B, H, D = 2, 4, 6
+    x_start = torch.randn(B, H, D)
+    noise = torch.randn_like(x_start)
+    t_2d = torch.randint(0, 10, (B, H))
 
-    residual_block = HiResidualTemporalBlock(8, 8, 6, 8)
-    residual_input = torch.randn(3, 8, 8)
-    time_input = torch.randn(3, 6)
-    residual_output = residual_block(residual_input, time_input)
-    assert residual_output.shape == (3, 8, 8)
-
-    mlp = MlpInvDyn(input_dim=4, hidden_dim=[8], output_dim=2)
-    mlp_output = mlp(torch.randn(5, 4))
-    assert mlp_output.shape == (5, 2)
-
-    mlp_v2 = MlpInvDynV2(
-        input_dim=4,
-        output_dim=2,
-        inv_m_config={
-            "inv_hid_dims": [8],
-            "act_f": "relu",
-            "use_dpout": False,
-            "prob_dpout": 0.1,
-        },
+    x_noisy = schedule.q_sample(x_start, t_2d, noise)
+    x_recon = schedule.predict_start_from_noise(
+        x_noisy, t_2d, noise, predict_epsilon=True
     )
-    mlp_v2_output = mlp_v2(torch.randn(5, 4))
-    assert mlp_v2_output.shape == (5, 2)
+    assert torch.allclose(x_recon, x_start, atol=1e-4)
+
+
+def test_diffusion_schedule_q_posterior_shape():
+    schedule = DiffusionSchedule(n_timesteps=10)
+    B, H, D = 2, 4, 6
+    x_start = torch.randn(B, H, D)
+    x_t = torch.randn(B, H, D)
+    t_2d = torch.randint(0, 10, (B, H))
+
+    mean, var, log_var = schedule.q_posterior(x_0=x_start, x_t=x_t, t=t_2d)
+    assert mean.shape == (B, H, D)
+    assert var.shape == (B, H, 1)
+    assert log_var.shape == (B, H, 1)

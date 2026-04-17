@@ -25,7 +25,7 @@ from ...utils.planning_config import extract_planner_runtime_config
 from ...utils.serialization import mkdir
 from ...utils.setup import set_seed
 from . import (
-    TrajectoryStitchingGaussianDiffusionWithInverseDynamics,
+    StitchingDiffusion,
 )
 from .trajectory_stitching_policy import (
     TrajectoryStitchingPolicy,
@@ -95,9 +95,7 @@ class TrajectoryStitchingMazePlanner:
             args_train,
         )
 
-        self.diffusion: TrajectoryStitchingGaussianDiffusionWithInverseDynamics = (
-            diffusion_experiment.ema
-        )
+        self.diffusion: StitchingDiffusion = diffusion_experiment.ema
         self.diffusion.var_temp = args.var_temp
         self.diffusion.condition_guidance_w = args.cond_w
         ## NEW

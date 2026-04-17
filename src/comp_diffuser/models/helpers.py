@@ -131,6 +131,7 @@ def extract(a, t, x_shape):
     """
     usually return (B, 1, 1)
     """
+    assert a.ndim == 1
     b, *_ = t.shape
     out = a.gather(-1, t)
     return out.reshape(b, *((1,) * (len(x_shape) - 1)))
@@ -144,26 +145,10 @@ def extract_2d(a, t, x_shape):
     b, h, *_ = t.shape
     ## NOTE: when t is also tensor, will create a new tensor
     out = a[t]
-    # pdb.set_trace()
     out = out.reshape(b, h, *((1,) * (len(x_shape) - 2)))
     ## out: B, H, 1
-    # pdb.set_trace()
 
     return out
-
-
-Two_Power_20 = 2**20
-
-
-def tensor_randint(low: torch.Tensor, high: torch.Tensor, size):
-    """
-    this method allows generating randint tensor where range is defined by a tensor
-    """
-    assert low.shape == high.shape == size
-    assert (low < high).all()
-    assert (high < Two_Power_20).all()
-    ## [0 to (high - low - 1)] + low
-    return torch.randint(Two_Power_20, size=size, dtype=torch.long) % (high - low) + low
 
 
 def cosine_beta_schedule(timesteps, s=0.008, dtype=torch.float32):
@@ -348,21 +333,6 @@ class WeightedStateL2(WeightedStateLoss):
 
     def _loss(self, pred, targ):
         return F.mse_loss(pred, targ, reduction="none")
-
-
-## -----------------------------------------------------
-
-
-class Conv1dBlockDd(Conv1dBlock_dd):
-    pass
-
-
-class WeightedLossL2V2(WeightedLoss_L2_V2):
-    pass
-
-
-class WeightedLossL2InvDynV3(WeightedLoss_L2_InvDyn_V3):
-    pass
 
 
 Losses = {

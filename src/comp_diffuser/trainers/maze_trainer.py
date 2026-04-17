@@ -6,7 +6,7 @@ import torch
 import wandb
 
 # from comp_diffuser.models.diffusion import GaussianDiffusion
-from ..models.diffusion.maze_diffusion import MazeGaussianDiffusionWithInverseDynamics
+from ..models.diffusion.maze_diffusion import MazeGaussianDiffusion
 from ..models.helpers import apply_conditioning
 from ..utils.arrays import apply_dict, to_device, to_device_tp, to_np
 from ..utils.eval_utils import ben_xy_to_luo_rowcol, print_color
@@ -18,7 +18,7 @@ from ..utils.training import EMA, cycle
 class MazeTrainer(object):
     def __init__(
         self,
-        diffusion_model: MazeGaussianDiffusionWithInverseDynamics,
+        diffusion_model: MazeGaussianDiffusion,
         dataset,
         renderer,
         ema_decay=0.995,

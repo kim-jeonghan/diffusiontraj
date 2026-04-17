@@ -63,7 +63,7 @@ base = {
         ),
         ## TODO:
         ## dd dfu
-        "diffusion_model": "models.diffusion.maze_diffusion.MazeGaussianDiffusionWithInverseDynamics",
+        "diffusion_model": "models.diffusion.maze_diffusion.MazeGaussianDiffusion",
         # 'diffusion_model': 'models.GaussianDiffusion',
         "n_diffusion_steps": 512,
         "action_weight": 1,

@@ -82,8 +82,8 @@ Load checkpoint → Policy (MazePolicy or TrajectoryStitchingPolicy)
 
 ### Module Responsibilities
 
-- **`models/diffusion/`** — `MazeGaussianDiffusionWithInverseDynamics` wraps `MazeTemporalUNet`; implements forward (noise) and reverse (denoise) diffusion with cosine beta schedule and inverse dynamics for action prediction.
-- **`models/trajectory_stitching/`** — Extends baseline with overlap region blending; `TrajectoryStitchingGaussianDiffusionWithInverseDynamics` and its trainer handle segment composition.
+- **`models/diffusion/`** — `MazeGaussianDiffusion` wraps `MazeTemporalUNet`; implements forward (noise) and reverse (denoise) diffusion with cosine beta schedule and inverse dynamics for action prediction.
+- **`models/trajectory_stitching/`** — Extends baseline with overlap region blending; `StitchingDiffusion` and its trainer handle segment composition.
 - **`trainers/maze_trainer.py`** — `MazeTrainer`: training loop, EMA updates, checkpoint saving, sample rendering.
 - **`planners/`** — `MazePolicy` and `Maze2DEnvPlanner` handle inference-time rollouts; `trajectory_blender.py` computes blended segments for stitching.
 - **`datasets/`** — D4RL/HDF5 loading, normalization, sequence dataset construction. Compositional variants under `datasets/comp/`.

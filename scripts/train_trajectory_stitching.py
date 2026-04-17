@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import wandb
 
-from comp_diffuser.models.trajectory_stitching.trajectory_stitching_trainer import (
+from comp_diffuser.trainers.trajectory_stitching_trainer import (
     TrajectoryStitchingTrainer,
 )
 from comp_diffuser.utils.arrays import batch_copy, batchify, report_parameters

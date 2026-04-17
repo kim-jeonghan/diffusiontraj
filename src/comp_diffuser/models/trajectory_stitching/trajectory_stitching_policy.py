@@ -19,7 +19,7 @@ from ...utils.planning_config import (
 )
 from ..helpers import apply_conditioning
 from . import (
-    TrajectoryStitchingGaussianDiffusionWithInverseDynamics,
+    StitchingDiffusion,
 )
 
 
@@ -32,9 +32,7 @@ class TrajectoryStitchingPolicy:
         policy_config,
         trajectory_blender_config,
     ):
-        self.diffusion_model: (
-            TrajectoryStitchingGaussianDiffusionWithInverseDynamics
-        ) = diffusion_model
+        self.diffusion_model: StitchingDiffusion = diffusion_model
         self.diffusion_model.eval()
         self.normalizer = normalizer
         self.action_dim = normalizer.action_dim

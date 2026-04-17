@@ -3,8 +3,7 @@ import time
 import einops
 import torch
 
-# from comp_diffuser.models.trajectory_stitching import TrajectoryStitchingGaussianDiffusionWithInverseDynamics
-from ..models.diffusion.maze_diffusion import MazeGaussianDiffusionWithInverseDynamics
+from ..models.diffusion.maze_diffusion import MazeGaussianDiffusion
 from ..models.helpers import apply_conditioning
 from ..models.trajectory_stitching.trajectory_stitching_policy import (
     TrajectoryStitchingPrediction,
@@ -17,11 +16,11 @@ class MazePolicy:
 
     def __init__(
         self,
-        diffusion_model,
+        diffusion_model: MazeGaussianDiffusion,
         normalizer,
         policy_config,
     ):
-        self.diffusion_model: MazeGaussianDiffusionWithInverseDynamics = diffusion_model
+        self.diffusion_model = diffusion_model
         self.diffusion_model.eval()
         self.normalizer = normalizer
         self.action_dim = normalizer.action_dim

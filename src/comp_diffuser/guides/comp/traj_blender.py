@@ -2,7 +2,7 @@ import numpy as np
 
 from ...datasets.normalization import DatasetNormalizer
 from ...models.trajectory_stitching import (
-    TrajectoryStitchingGaussianDiffusionWithInverseDynamics,
+    StitchingDiffusion,
 )
 from ...utils.composition.trajectory_ranking import get_np_trajs_list
 from ...utils.eval_utils import print_color
@@ -11,7 +11,7 @@ from ...utils.eval_utils import print_color
 class Traj_Blender:
     def __init__(
         self,
-        diffusion: TrajectoryStitchingGaussianDiffusionWithInverseDynamics,
+        diffusion: StitchingDiffusion,
         normalizer: DatasetNormalizer,
         blend_type: str,
         exp_beta=3,

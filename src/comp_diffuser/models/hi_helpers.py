@@ -178,19 +178,3 @@ class MLP_InvDyn_V2(nn.Module):  # encoder
         # pdb.set_trace()
 
         return inv_loss, {}
-
-
-class HiResidualTemporalBlock(Hi_ResidualTemporalBlock):
-    pass
-
-
-class SinusoidalPosEmb2D(SinusoidalPosEmb_2D):
-    pass
-
-
-class MlpInvDyn(MLP_InvDyn):
-    pass
-
-
-class MlpInvDynV2(MLP_InvDyn_V2):
-    pass

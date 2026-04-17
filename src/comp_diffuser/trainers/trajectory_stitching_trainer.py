@@ -5,21 +5,21 @@ import einops
 import torch
 import wandb
 
-from ...utils.arrays import apply_dict, to_device, to_device_tp, to_np
-from ...utils.eval_utils import ben_xy_to_luo_rowcol, print_color
-from ...utils.timer import Timer
-from ...utils.train_utils import get_lr
-from ...utils.training import EMA, cycle
-from ..helpers import apply_conditioning
-from . import (
-    TrajectoryStitchingGaussianDiffusionWithInverseDynamics,
+from ..models.helpers import apply_conditioning
+from ..models.trajectory_stitching.trajectory_stitching_diffusion import (
+    StitchingDiffusion,
 )
+from ..utils.arrays import apply_dict, to_device, to_device_tp, to_np
+from ..utils.eval_utils import ben_xy_to_luo_rowcol, print_color
+from ..utils.timer import Timer
+from ..utils.train_utils import get_lr
+from ..utils.training import EMA, cycle
 
 
 class TrajectoryStitchingTrainer(object):
     def __init__(
         self,
-        diffusion_model: TrajectoryStitchingGaussianDiffusionWithInverseDynamics,
+        diffusion_model: StitchingDiffusion,
         dataset,
         renderer,
         ema_decay=0.995,
