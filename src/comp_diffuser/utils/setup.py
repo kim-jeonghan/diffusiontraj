@@ -195,7 +195,7 @@ class ArgsParser(Tap):
             elif old_type in [bool, type(None)]:
                 try:
                     val = eval(val)
-                except:
+                except Exception:
                     print(
                         f"[ utils/setup ] Warning: could not parse {val} (old: {old_val}, {old_type}), using str"
                     )
@@ -251,7 +251,7 @@ class ArgsParser(Tap):
         try:
             # save_git_diff(os.path.join(args.savepath, 'diff.txt'))
             pass  # no need to save, slow down
-        except:
+        except Exception:
             print("[ utils/setup ] WARNING: did not save git diff")
 
     def set_wandb(self, args):

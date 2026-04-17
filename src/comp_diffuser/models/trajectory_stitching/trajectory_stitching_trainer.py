@@ -6,7 +6,7 @@ import torch
 import wandb
 
 from ...utils.arrays import apply_dict, to_device, to_device_tp, to_np
-from ...utils.eval_utils import print_color
+from ...utils.eval_utils import ben_xy_to_luo_rowcol, print_color
 from ...utils.timer import Timer
 from ...utils.train_utils import get_lr
 from ...utils.training import EMA, cycle
@@ -331,9 +331,6 @@ class TrajectoryStitchingTrainer(object):
             normed_observations = samples[:, :, act_dim:]
             # pdb.set_trace()
 
-            # [ 1 x 1 x observation_dim ]
-            normed_conditions = to_np(batch.conditions[0])[:, None]
-
             ## [ n_samples x (horizon + 1) x observation_dim ]
             observations = self.dataset.normalizer.unnormalize(
                 normed_observations, "observations"
@@ -397,6 +394,6 @@ class TrajectoryStitchingTrainer(object):
         dset_type = self.dataset.dset_type
         if dset_type != "ours":
             assert "ben" in dset_type.lower()
-            obs_trajs = utils.ben_xy_to_luo_rowcol(dset_type, obs_trajs)
+            obs_trajs = ben_xy_to_luo_rowcol(dset_type, obs_trajs)
 
         return obs_trajs

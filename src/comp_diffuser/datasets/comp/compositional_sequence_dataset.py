@@ -52,7 +52,7 @@ class CompositionalSequenceDataset(torch.utils.data.Dataset):
             replBuf_config = dict(use_padding=True, tgt_hzn=horizon, **dataset_config)
             assert "bens" in self.dset_type
         else:
-            assert dataset_config.get("pad_type", None) == None
+            assert dataset_config.get("pad_type", None) is None
             replBuf_config = dict(use_padding=False)
 
         fields = ReplayBuffer(

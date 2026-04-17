@@ -4,6 +4,8 @@ import numpy as np
 import torch
 from torch import nn
 
+from ...utils.arrays import batch_repeat_tensor_in_dict
+from ...utils.eval_utils import print_color
 from ..common.model_outputs import ModelPrediction
 from ..helpers import (
     Losses,
@@ -234,7 +236,7 @@ class MazeGaussianDiffusionWithInverseDynamics(nn.Module):
         if False:
             ## NOTE: we do not need classifier-free guidance in DD for maze setup
 
-            x_2, t_2d_2, tj_cond_2 = utils.batch_repeat_tensor_in_dict(
+            x_2, t_2d_2, tj_cond_2 = batch_repeat_tensor_in_dict(
                 x, t_2d, tj_cond, n_rp=2
             )
 
@@ -281,7 +283,7 @@ class MazeGaussianDiffusionWithInverseDynamics(nn.Module):
         mask_same_t: bool tensor, (B,H); if True, the point remains same noise level
         """
         ## timesteps is 2D tensor: (B, H)
-        b, *_, device = *x.shape, x.device
+        b, *_ = x.shape
         model_mean, _, model_log_variance = self.p_mean_variance(
             x=x,
             t_2d=timesteps,
@@ -359,7 +361,6 @@ class MazeGaussianDiffusionWithInverseDynamics(nn.Module):
         """
         # pdb.set_trace()
 
-        device = self.betas.device
         batch_size = len(g_cond["boundary_conditions"][0])
 
         horizon = horizon or self.horizon
@@ -367,7 +368,6 @@ class MazeGaussianDiffusionWithInverseDynamics(nn.Module):
 
         if self.infer_deno_type == "hi_fix_v1":
             raise NotImplementedError
-            return self.p_sample_loop_hi_fix_v1(shape, cond, *args, **kwargs)
         elif self.infer_deno_type == "same":
             if self.use_ddim:
                 return self.ddim_p_sample_loop(shape, g_cond, *args, **kwargs)
@@ -375,14 +375,12 @@ class MazeGaussianDiffusionWithInverseDynamics(nn.Module):
                 return self.p_sample_loop(shape, g_cond, *args, **kwargs)
         else:
             raise NotImplementedError
-            return self.p_sample_loop(shape, cond, *args, **kwargs)
 
     @torch.no_grad()
     def sample_unCond(self, batch_size, *args, horizon=None, **kwargs):
         """
         batch_size : int
         """
-        device = self.betas.device
         horizon = horizon or self.horizon
         shape = (batch_size, horizon, self.observation_dim)
         g_cond = dict(do_cond=False)
@@ -512,7 +510,6 @@ class MazeGaussianDiffusionWithInverseDynamics(nn.Module):
 
         if self.is_train_inv:
             assert False
-            inv_loss = self.compute_invdyn_loss(x_start=x)
         else:
             inv_loss = 0.0
 
@@ -570,7 +567,7 @@ class MazeGaussianDiffusionWithInverseDynamics(nn.Module):
         ## ------- should be similar to above -----
         if tj_cond["do_cond"]:
 
-            x_2, t_2d_2, tj_cond_2 = utils.batch_repeat_tensor_in_dict(
+            x_2, t_2d_2, tj_cond_2 = batch_repeat_tensor_in_dict(
                 x, t_2d, tj_cond, n_rp=2
             )
 
@@ -621,7 +618,7 @@ class MazeGaussianDiffusionWithInverseDynamics(nn.Module):
     @torch.no_grad()
     def ddim_p_sample_loop(self, shape, g_cond, verbose=True, return_diffusion=False):
 
-        utils.print_color(f"ddim steps: {self.ddim_num_inference_steps}", c="y")
+        print_color(f"ddim steps: {self.ddim_num_inference_steps}", c="y")
 
         device = self.betas.device
         batch_size = shape[0]

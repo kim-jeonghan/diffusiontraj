@@ -238,12 +238,6 @@ class MazeTemporalUNet(nn.Module):
         ## -- Energy Diffusion Parameterization Setup --
         elif self.energy_param_type == "L2":
             raise NotImplementedError
-            self.final_conv = nn.Sequential(
-                Conv1dBlock_dd(
-                    dim, dim, kernel_size=5, mish=mish, conv_zero_init=False
-                ),
-                nn.Conv1d(dim, transition_dim, 1),
-            )
         else:
             raise NotImplementedError()
 
@@ -263,9 +257,6 @@ class MazeTemporalUNet(nn.Module):
         """
         if self.energy_mode:
             assert False
-
-        ## sanity check
-        b_size = x.shape[0]
 
         ## ----------------
 

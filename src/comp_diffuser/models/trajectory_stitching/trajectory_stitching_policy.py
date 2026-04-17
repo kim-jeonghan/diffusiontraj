@@ -6,6 +6,7 @@ import torch
 
 from ...guides.comp.traj_blender import Traj_Blender
 from ...guides.comp.trajectory_batches import InverseDynamicsTrajectories
+from ...utils.arrays import to_np
 from ...utils.composition.plan_utils import split_trajs_list_by_prob
 from ...utils.composition.trajectory_ranking import (
     compute_ovlp_dist,
@@ -171,7 +172,6 @@ class TrajectoryStitchingPolicy:
         horizon = self.diffusion_model.horizon
         observation_dim = self.diffusion_model.observation_dim
         sample_shape = [batch_size, horizon, observation_dim]
-
         start_goal_pairs = planner_inputs["start_goal_pairs"]
         start_goal_pairs = torch.tensor(
             self.normalizer.normalize(start_goal_pairs, "observations")
@@ -279,8 +279,6 @@ class TrajectoryStitchingPolicy:
         Generate one trajectory without stitching.
         """
         horizon = self.diffusion_model.horizon
-        observation_dim = self.diffusion_model.observation_dim
-        sample_shape = [batch_size, horizon, observation_dim]
 
         start_goal_pairs = planner_inputs["start_goal_pairs"]
         start_goal_pairs = torch.tensor(
@@ -319,7 +317,7 @@ class TrajectoryStitchingPolicy:
             predicted_trajectories, boundary_conditions, 0
         )
 
-        predicted_trajectories = utils.to_np(predicted_trajectories)
+        predicted_trajectories = to_np(predicted_trajectories)
         unnormalized_predicted_trajectories = self.normalizer.unnormalize(
             predicted_trajectories,
             "observations",
@@ -356,7 +354,7 @@ class TrajectoryStitchingPolicy:
         sample = self.diffusion_model.conditional_sample(g_cond)
 
         actions = np.zeros(shape=(*sample.shape[0:2], self.action_dim))
-        sample = utils.to_np(sample)
+        sample = to_np(sample)
         actions = self.normalizer.unnormalize(actions, "actions")
         # actions = np.tanh(actions)
 

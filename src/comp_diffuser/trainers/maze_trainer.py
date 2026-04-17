@@ -9,7 +9,7 @@ import wandb
 from ..models.diffusion.maze_diffusion import MazeGaussianDiffusionWithInverseDynamics
 from ..models.helpers import apply_conditioning
 from ..utils.arrays import apply_dict, to_device, to_device_tp, to_np
-from ..utils.eval_utils import print_color
+from ..utils.eval_utils import ben_xy_to_luo_rowcol, print_color
 from ..utils.timer import Timer
 from ..utils.train_utils import get_lr
 from ..utils.training import EMA, cycle
@@ -342,6 +342,6 @@ class MazeTrainer(object):
         dset_type = self.dataset.dset_type
         if dset_type != "ours":
             assert "ben" in dset_type.lower()
-            obs_trajs = utils.ben_xy_to_luo_rowcol(dset_type, obs_trajs)
+            obs_trajs = ben_xy_to_luo_rowcol(dset_type, obs_trajs)
 
         return obs_trajs

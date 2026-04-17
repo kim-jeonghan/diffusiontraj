@@ -7,7 +7,7 @@ import numpy as np
 import torch
 import yaml
 
-from ...utils import utils
+from ...utils.eval_utils import print_color
 
 warnings.simplefilter("always", ResourceWarning)  # Show all resource warnings
 from tap import Tap
@@ -47,7 +47,7 @@ def main():
 
     ## do we actually need to init an env?
     # env = gym.make(rs_cfg['el_name'],) #  gen_data=True)
-    utils.print_color(f"el_name: {el_name}")
+    print_color(f"el_name: {el_name}")
     prob_dicts = []
     if rs_cfg["prob_type"] == "bottom_top_2way":
         ## np2d (n_valid_cell, 2)
@@ -93,7 +93,7 @@ def main():
     ## lock file
     if "smoke" not in args.sub_conf:
         os.chmod(h5_save_path, 0o444)
-    utils.print_color(f"[save to] {h5_save_path=}")
+    print_color(f"[save to] {h5_save_path=}")
 
 
 if __name__ == "__main__":

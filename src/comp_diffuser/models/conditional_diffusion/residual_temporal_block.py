@@ -20,7 +20,7 @@ class ResidualTemporalBlock(nn.Module):
     ):
         """kwargs: place holder for some useless args e.g. wall_embed_dim"""
         super().__init__()
-        assert conv_zero_init == False
+        assert not conv_zero_init
         force_residual_conv = resblock_config.get("force_residual_conv", False)
         time_mlp_config = resblock_config["time_mlp_config"]
 

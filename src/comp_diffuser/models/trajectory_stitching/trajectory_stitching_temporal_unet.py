@@ -132,7 +132,6 @@ class TrajectoryStitchingTemporalUNet(nn.Module):
             tot_cond_dim = time_dim + wall_embed_dim + 2 * self.inpaint_token_dim
         else:
             raise NotImplementedError
-            time_dim = dim
 
         # pdb.set_trace() ## check above
 
@@ -333,8 +332,6 @@ class TrajectoryStitchingTemporalUNet(nn.Module):
         """
         if self.energy_mode:
             assert False
-            x.requires_grad_(True)
-            x_inp = x
 
         is_st_inpat = tj_cond["is_st_inpat"]  ## torch tensor gpu
         is_end_inpat = tj_cond["is_end_inpat"]
@@ -442,7 +439,6 @@ class TrajectoryStitchingTemporalUNet(nn.Module):
                 end_ovlp_feat[int(b_s // 2) :] = 0.0  # * end_ovlp_feat[int(b_s//2):]
             else:
                 assert False
-                w = 0.0 * w
 
         if self.cat_t_w:
             ## e.g., B, time_dim+128+128

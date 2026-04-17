@@ -9,7 +9,6 @@ from ...datasets.d4rl import Is_Gym_Robot_Env
 from ...rendering.maze_renderer import Maze2DRenderer
 from ...utils.composition.composition_serialization import (
     get_trajectory_stitching_eval_problem_path,
-    load_compositional_diffusion,
     load_trajectory_stitching_dataset_normalizer,
     load_trajectory_stitching_diffusion,
     load_trajectory_stitching_eval_problems,
@@ -22,8 +21,8 @@ from ...utils.eval_utils import (
     save_img,
     save_json,
 )
-from ...utils.serialization import mkdir
 from ...utils.planning_config import extract_planner_runtime_config
+from ...utils.serialization import mkdir
 from ...utils.setup import set_seed
 from . import (
     TrajectoryStitchingGaussianDiffusionWithInverseDynamics,
@@ -166,9 +165,7 @@ class TrajectoryStitchingMazePlanner:
 
     def load_ev_problems(self):
         ## Oct 21: get the file name and load the dict out
-        self.problems_h5path = get_trajectory_stitching_eval_problem_path(
-            self.env.name
-        )
+        self.problems_h5path = get_trajectory_stitching_eval_problem_path(self.env.name)
         self.problems_dict = load_trajectory_stitching_eval_problems(
             h5path=self.problems_h5path
         )
@@ -356,7 +353,7 @@ class TrajectoryStitchingMazePlanner:
         ep_is_suc = np.array(ep_is_suc)
         ep_srate = ep_is_suc.mean() * 100
         ep_fail_idxs = np.where(
-            ep_is_suc == False,
+            ~ep_is_suc,
         )[0]
         assert len(ep_is_suc) == num_ep
         # pdb.set_trace()
@@ -558,12 +555,8 @@ class TrajectoryStitchingMazePlanner:
                 gl_pos_acc = self.problems_dict["goal_pos"][i_ep:tmp_last_p_idx]
 
                 ## we need to make the cell-idx level state into mujoco coordinate level first
-                input_st_acc = ben_luo_rowcol_to_xy(
-                    self.dset_type, trajs=input_st_acc
-                )
-                gl_pos_acc = ben_luo_rowcol_to_xy(
-                    self.dset_type, trajs=gl_pos_acc
-                )
+                input_st_acc = ben_luo_rowcol_to_xy(self.dset_type, trajs=input_st_acc)
+                gl_pos_acc = ben_luo_rowcol_to_xy(self.dset_type, trajs=gl_pos_acc)
                 # pdb.set_trace()
                 ## utils.ben_xy_to_luo_rowcol(self.dset_type, trajs=gl_pos_acc) ## just for check
 
@@ -658,7 +651,6 @@ class TrajectoryStitchingMazePlanner:
 
                 tmp_scs = np.array(ep_scores[tmp_st_idx:tmp_end_idx])
                 tmp_sr = int(np.array(ep_is_suc[tmp_st_idx:tmp_end_idx]).mean() * 100)
-                tmp_avg_sc = int(tmp_scs.mean())
                 tmp_num_f = (tmp_scs < 100).sum()  # not suc
 
                 # pdb.set_trace()
@@ -724,7 +716,7 @@ class TrajectoryStitchingMazePlanner:
         ep_is_suc = np.array(ep_is_suc)
         ep_srate = ep_is_suc.mean() * 100
         ep_fail_idxs = np.where(
-            ep_is_suc == False,
+            ~ep_is_suc,
         )[0]
         assert len(ep_is_suc) == num_ep
         # pdb.set_trace()
@@ -1153,7 +1145,7 @@ class TrajectoryStitchingMazePlanner:
         ep_is_suc = np.array(ep_is_suc)
         ep_srate = ep_is_suc.mean() * 100
         ep_fail_idxs = np.where(
-            ep_is_suc == False,
+            ~ep_is_suc,
         )[0]
         assert len(ep_is_suc) == num_ep
         # pdb.set_trace()

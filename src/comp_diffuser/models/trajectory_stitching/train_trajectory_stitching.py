@@ -1,21 +1,15 @@
-import sys
-from pathlib import Path
-
-REPO_ROOT = Path(__file__).resolve().parents[3]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
+import numpy as np
 import torch
 import wandb
 
 from comp_diffuser.utils.arrays import batch_copy, batchify, report_parameters
 from comp_diffuser.utils.config import Config
 from comp_diffuser.utils.setup import ArgsParser as BaseArgsParser
-
-torch.backends.cudnn.benchmark = True
-torch.set_printoptions(precision=4, sci_mode=False)
-import numpy as np
+from .trajectory_stitching_trainer import TrajectoryStitchingTrainer
 
 np.set_printoptions(precision=3, suppress=True)
+torch.backends.cudnn.benchmark = True
+torch.set_printoptions(precision=4, sci_mode=False)
 
 
 # -----------------------------------------------------------------------------#
@@ -126,13 +120,6 @@ diffusion_model_config = Config(
 #     eval_time_config=args.eval_time_config,
 #     comp_dfu_config=args.comp_dfu_config,
 # )
-
-#############
-# pdb.set_trace()
-
-from .trajectory_stitching_trainer import (
-    TrajectoryStitchingTrainer,
-)
 
 trainer_config = Config(
     TrajectoryStitchingTrainer,

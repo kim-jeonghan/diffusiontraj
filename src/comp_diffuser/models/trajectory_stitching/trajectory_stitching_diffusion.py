@@ -3,6 +3,7 @@ import numpy as np
 import torch
 from torch import nn
 
+from ...utils.arrays import batch_repeat_tensor_in_dict
 from ...utils.eval_utils import print_color
 from ..common.model_outputs import ModelPrediction
 from ..helpers import (
@@ -258,7 +259,7 @@ class TrajectoryStitchingGaussianDiffusionWithInverseDynamics(nn.Module):
         # out_model = self.small_model_pred(x, t_2d, segment_conditioning)
         if segment_conditioning["use_conditioning"]:
 
-            x_2, t_2d_2, tj_cond_2 = utils.batch_repeat_tensor_in_dict(
+            x_2, t_2d_2, tj_cond_2 = batch_repeat_tensor_in_dict(
                 x, t_2d, segment_conditioning, n_rp=2
             )
 
@@ -305,7 +306,7 @@ class TrajectoryStitchingGaussianDiffusionWithInverseDynamics(nn.Module):
         mask_same_t: bool tensor, (B,H); if True, the point remains same noise level
         """
         ## timesteps is 2D tensor: (B, H)
-        b, *_, device = *x.shape, x.device
+        b, *_ = x.shape
         model_mean, _, model_log_variance = self.p_mean_variance(
             x=x,
             t_2d=timesteps,
@@ -414,7 +415,7 @@ class TrajectoryStitchingGaussianDiffusionWithInverseDynamics(nn.Module):
             )
             segment_conditioning["use_conditioning"] = True
 
-        elif g_cond["conditioning_mode"] == False:
+        elif not g_cond["conditioning_mode"]:
             ## drop everything
             segment_conditioning = dict(
                 start_overlap_is_drop=None,
@@ -480,7 +481,6 @@ class TrajectoryStitchingGaussianDiffusionWithInverseDynamics(nn.Module):
         conditions : [ (time, state), ... ]
         """
         # assert False, 'not finished'
-        device = self.betas.device
         batch_size = len(g_cond["traj_full"])  ## TODO: check
 
         # if segment_conditioning['start_overlap_is_drop'] is not None:
@@ -496,7 +496,6 @@ class TrajectoryStitchingGaussianDiffusionWithInverseDynamics(nn.Module):
 
         if self.infer_deno_type == "hi_fix_v1":
             raise NotImplementedError
-            return self.p_sample_loop_hi_fix_v1(shape, cond, *args, **kwargs)
         elif self.infer_deno_type == "same":
             if self.use_ddim:
                 return self.ddim_p_sample_loop(shape, g_cond, *args, **kwargs)
@@ -504,14 +503,12 @@ class TrajectoryStitchingGaussianDiffusionWithInverseDynamics(nn.Module):
                 return self.p_sample_loop(shape, g_cond, *args, **kwargs)
         else:
             raise NotImplementedError
-            return self.p_sample_loop(shape, cond, *args, **kwargs)
 
     @torch.no_grad()
     def sample_unCond(self, batch_size, *args, horizon=None, **kwargs):
         """
         batch_size : int
         """
-        device = self.betas.device
         horizon = horizon or self.horizon
         shape = (batch_size, horizon, self.observation_dim)
         g_cond = dict(conditioning_mode=False)
@@ -820,7 +817,6 @@ class TrajectoryStitchingGaussianDiffusionWithInverseDynamics(nn.Module):
 
         if self.is_train_inv:
             assert False
-            inv_loss = self.compute_invdyn_loss(x_start=x)
         else:
             inv_loss = 0.0
 
@@ -911,10 +907,8 @@ class TrajectoryStitchingGaussianDiffusionWithInverseDynamics(nn.Module):
         device = x_et.device
         # batch_bool_args = dict(
         # size=(batch_size,), dtype=torch.bool, device=device)
-        d_dim = x_et.shape[2]
-
         # batch_size = st_traj.shape[0]
-        if st_traj == None:
+        if st_traj is None:
             ## drop everything
             # st_traj = torch.zeros_like(end_traj)
             # st_traj = torch.zeros(size=(batch_size, self.len_ovlp_cd, d_dim),
@@ -946,7 +940,7 @@ class TrajectoryStitchingGaussianDiffusionWithInverseDynamics(nn.Module):
             )
 
         hzn_minus1 = self.horizon - 1
-        if end_traj == None:
+        if end_traj is None:
             # end_traj = torch.zeros_like(st_traj)
             # end_is_drop = np.ones(shape=(batch_size,), dtype=bool)
             end_is_drop = None
@@ -1017,7 +1011,7 @@ class TrajectoryStitchingGaussianDiffusionWithInverseDynamics(nn.Module):
         #     end_traj = end_traj.clone()
 
         ### -------
-        if st_traj == None:
+        if st_traj is None:
             pass
         elif not is_noisy:
             st_traj = self.q_sample(
@@ -1026,7 +1020,7 @@ class TrajectoryStitchingGaussianDiffusionWithInverseDynamics(nn.Module):
         else:
             st_traj = st_traj.clone()
 
-        if end_traj == None:
+        if end_traj is None:
             pass
         elif not is_noisy:
             end_traj = self.q_sample(
@@ -1063,7 +1057,7 @@ class TrajectoryStitchingGaussianDiffusionWithInverseDynamics(nn.Module):
         ## ------- should be similar to above -----
         if segment_conditioning["use_conditioning"]:
 
-            x_2, t_2d_2, tj_cond_2 = utils.batch_repeat_tensor_in_dict(
+            x_2, t_2d_2, tj_cond_2 = batch_repeat_tensor_in_dict(
                 x, t_2d, segment_conditioning, n_rp=2
             )
 
@@ -1117,7 +1111,7 @@ class TrajectoryStitchingGaussianDiffusionWithInverseDynamics(nn.Module):
     @torch.no_grad()
     def ddim_p_sample_loop(self, shape, g_cond, verbose=True, return_diffusion=False):
 
-        utils.print_color(f"ddim steps: {self.ddim_num_inference_steps}", c="y")
+        print_color(f"ddim steps: {self.ddim_num_inference_steps}", c="y")
 
         device = self.betas.device
         batch_size = shape[0]
@@ -1756,7 +1750,7 @@ class TrajectoryStitchingGaussianDiffusionWithInverseDynamics(nn.Module):
                         stgl_cond={0: boundary_conditions[0]},
                     )
 
-                elif i_tj > 0 and i_tj < n_comp - 1:
+                elif i_tj > 0 and i_tj < num_segments - 1:
                     ## intermediate one
                     x_p_i_minus_1 = segment_samples[i_tj - 1]
                     _, end_traj_i_minus_1 = self.extract_ovlp_from_full(x_p_i_minus_1)
@@ -1821,13 +1815,13 @@ class TrajectoryStitchingGaussianDiffusionWithInverseDynamics(nn.Module):
                     ## loop through each elem in list
                     for i_c in range(len_tjc):
                         if k_c in ["start_overlap_is_drop", "end_overlap_is_drop"]:
-                            if tj_cond_list[i_c][k_c] == None:
+                            if tj_cond_list[i_c][k_c] is None:
                                 tj_cond_list[i_c][k_c] = torch.ones(
                                     size=(b_s,), dtype=torch.bool, device=d_v
                                 )
 
                         if k_c in ["start_overlap_traj", "end_overlap_traj"]:
-                            if tj_cond_list[i_c][k_c] == None:
+                            if tj_cond_list[i_c][k_c] is None:
                                 ## use a placeholder with the same shape since this will be dropped anyway.
                                 tj_cond_list[i_c][k_c] = torch.zeros_like(templ_ov_tj)
                                 pass

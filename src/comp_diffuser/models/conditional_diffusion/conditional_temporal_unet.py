@@ -74,7 +74,6 @@ class ConditionalTemporalUNet(nn.Module):
             tot_cond_dim = time_dim + wall_embed_dim
         else:
             raise NotImplementedError
-            time_dim = dim
 
         ## set param used in ebm
         self.energy_mode = network_config["energy_mode"]
@@ -276,12 +275,6 @@ class ConditionalTemporalUNet(nn.Module):
         ## -- Energy Diffusion Parameterization Setup --
         elif self.energy_param_type == "L2":
             raise NotImplementedError
-            self.final_conv = nn.Sequential(
-                Conv1dBlock_dd(
-                    dim, dim, kernel_size=5, mish=mish, conv_zero_init=False
-                ),
-                nn.Conv1d(dim, transition_dim, 1),
-            )
         else:
             raise NotImplementedError()
 
@@ -364,7 +357,6 @@ class ConditionalTemporalUNet(nn.Module):
                 end_ovlp_feat[int(b_s // 2) :] = 0.0 * end_ovlp_feat[int(b_s // 2) :]
             else:
                 assert False
-                w = 0.0 * w
             # pdb.set_trace()
 
         if self.cat_t_w:

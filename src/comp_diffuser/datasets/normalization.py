@@ -31,7 +31,7 @@ class DatasetNormalizer:
                     self.normalizers[key] = normalizer(val, key)
                 else:  ## likely limit normalizer
                     self.normalizers[key] = normalizer(val)
-            except:
+            except Exception:
                 print(f"[ utils/normalization ] Skipping {key} | {normalizer}")
                 assert False
             # key: normalizer(val)
