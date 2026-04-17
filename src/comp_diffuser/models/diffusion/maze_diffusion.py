@@ -1,12 +1,12 @@
 import torch
 from tqdm import tqdm
 
+from ...models.networks import MazeTemporalUNet
 from ...utils.arrays import batch_repeat_tensor_in_dict
 from ...utils.eval_utils import print_color
 from ..common.base_diffusion import BaseDiffusion
+from ..common.helpers import apply_conditioning
 from ..common.model_outputs import ModelPrediction
-from ..helpers import apply_conditioning
-from .maze_temporal_unet import MazeTemporalUNet
 
 
 class MazeGaussianDiffusion(BaseDiffusion):
@@ -69,7 +69,9 @@ class MazeGaussianDiffusion(BaseDiffusion):
     def p_mean_variance(self, x_t, t_2d, cond, return_modelout=False):
         out_model = self.small_model_pred(x_t, t_2d, cond)
 
-        x_0 = self.schedule.predict_start_from_noise(x_t, t_2d=t_2d, noise=out_model)
+        x_0 = self.schedule.predict_start_from_noise(
+            x_t, t_2d=t_2d, noise=out_model, predict_epsilon=self.predict_epsilon
+        )
         x_0.clamp_(-1.0, 1.0)
 
         model_mean, posterior_variance, posterior_log_variance = (
@@ -94,6 +96,7 @@ class MazeGaussianDiffusion(BaseDiffusion):
         device = self.schedule.betas.device
         batch_size = shape[0]
         x = self.var_temp * torch.randn(shape, device=device)
+        boundary_conditions = g_cond.get("boundary_conditions", {})
 
         if return_diffusion:
             diffusion = [x]
@@ -102,7 +105,7 @@ class MazeGaussianDiffusion(BaseDiffusion):
             timesteps = torch.full(
                 (batch_size, self.horizon), i, device=device, dtype=torch.long
             )
-            x = apply_conditioning(x, g_cond["boundary_conditions"], 0)
+            x = apply_conditioning(x, boundary_conditions, 0)
             x = self.p_sample(x, cond={}, timesteps=timesteps)
 
             if return_diffusion:
@@ -114,7 +117,13 @@ class MazeGaussianDiffusion(BaseDiffusion):
 
     @torch.no_grad()
     def conditional_sample(self, g_cond, *args, horizon=None, **kwargs):
-        batch_size = len(g_cond["boundary_conditions"][0])
+        boundary_conditions = g_cond.get("boundary_conditions", {})
+        if boundary_conditions:
+            batch_size = len(boundary_conditions[0])
+        elif "traj_full" in g_cond:
+            batch_size = len(g_cond["traj_full"])
+        else:
+            raise KeyError("Expected `boundary_conditions` or `traj_full` in g_cond.")
         horizon = horizon or self.horizon
         shape = (batch_size, horizon, self.observation_dim)
 
@@ -128,7 +137,7 @@ class MazeGaussianDiffusion(BaseDiffusion):
     def sample_unCond(self, batch_size, *args, horizon=None, **kwargs):
         horizon = horizon or self.horizon
         shape = (batch_size, horizon, self.observation_dim)
-        g_cond = dict(conditioning_mode=False)
+        g_cond = {"boundary_conditions": {}}
 
         if self.infer_deno_type == "same":
             return self.p_sample_loop(shape, g_cond, *args, **kwargs)
@@ -141,7 +150,7 @@ class MazeGaussianDiffusion(BaseDiffusion):
         device = self.schedule.betas.device
         batch_size = shape[0]
         x = self.var_temp * torch.randn(shape, device=device)
-        boundary_conditions = g_cond["boundary_conditions"]
+        boundary_conditions = g_cond.get("boundary_conditions", {})
         x = apply_conditioning(x, boundary_conditions, 0)
 
         if return_diffusion:
@@ -188,7 +197,7 @@ class MazeGaussianDiffusion(BaseDiffusion):
 
         return loss, info
 
-    def loss(self, x_clean, cond_start_goal):
+    def loss(self, x_clean, boundary_conditions):
         assert self.is_direct_train
         batch_size = len(x_clean)
         t_1d = torch.randint(
@@ -198,7 +207,7 @@ class MazeGaussianDiffusion(BaseDiffusion):
 
         noise = torch.randn_like(x_clean)
         x_noisy = self.schedule.q_sample(x_0=x_clean, t_2d=t_2d, noise=noise)
-        x_noisy = apply_conditioning(x_noisy, cond_start_goal, 0)
+        x_noisy = apply_conditioning(x_noisy, boundary_conditions, 0)
 
         return self.p_losses(x_clean, x_noisy, noise, t_2d, cond={})
 
@@ -219,7 +228,7 @@ class MazeGaussianDiffusion(BaseDiffusion):
         if self.predict_epsilon:
             pred_noise = torch.clamp(out_pred, -self.clip_noise, self.clip_noise)
             x_0 = self.schedule.predict_start_from_noise(
-                x_t=x, t_2d=t_2d, noise=pred_noise
+                x_t=x, t_2d=t_2d, noise=pred_noise, predict_epsilon=True
             )
         else:
             x_0 = out_pred

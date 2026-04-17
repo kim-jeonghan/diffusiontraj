@@ -1,10 +1,5 @@
-from .d4rl import load_env_gym_robo as load_env_gym_robo
-from .d4rl import load_environment as load_environment
-from .sequence import Batch as Batch
-from .sequence import GoalDataset as GoalDataset
-from .sequence import SequenceDataset as SequenceDataset
-from .sequence import ValueBatch as ValueBatch
-from .sequence import ValueDataset as ValueDataset
+from .d4rl import load_env_gym_robo, load_environment
+from .sequence import Batch, GoalDataset, SequenceDataset, ValueBatch, ValueDataset
 from .statistics import (
     Ben_maze_large_Act_Max,
     Ben_maze_large_Act_Min,

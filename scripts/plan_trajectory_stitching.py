@@ -4,7 +4,7 @@ from datetime import datetime
 
 import torch
 
-from comp_diffuser.models.trajectory_stitching.trajectory_stitching_planner import (
+from comp_diffuser.models.stitching.trajectory_stitching_planner import (
     TrajectoryStitchingMazePlanner,
 )
 from comp_diffuser.utils.composition.trajectory_ranking import parse_seeds_str

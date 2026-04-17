@@ -149,7 +149,6 @@ trainer_config = Config(
 
 
 # model = model_config()
-# from comp_diffuser.models.conditional_diffusion import Cd_Sml_GauDiffusion_InvDyn_V1
 diffusion_model = diffusion_model_config(model=model)
 
 trainer = trainer_config(
@@ -171,14 +170,16 @@ print("Testing forward...", end=" ", flush=True)
 batch = batchify(dataset[0])  # [1,380,2]
 # batch = utils.batchify_seq( [dataset[0], dataset[1]] )
 batch = batch_copy(batch, 4)
-obs_trajs, act_trajs, stgl_cond = batch
+obs_trajs, act_trajs, boundary_conditions = batch
 # pdb.set_trace()
 ##---- can be delete
 # for k,v in dict(diffusion_model.named_parameters()).items():
 #     if 'diffusion_model' not in k:
 #         print(k)
 ##----
-loss, _ = diffusion_model.loss(x_clean=obs_trajs, cond_start_goal=stgl_cond)
+loss, _ = diffusion_model.loss(
+    x_clean=obs_trajs, boundary_conditions=boundary_conditions
+)
 loss.backward()
 # pdb.set_trace()
 print("✓")

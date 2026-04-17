@@ -3,9 +3,9 @@ import time
 import einops
 import torch
 
+from ..models.common.helpers import apply_conditioning
 from ..models.diffusion.maze_diffusion import MazeGaussianDiffusion
-from ..models.helpers import apply_conditioning
-from ..models.trajectory_stitching.trajectory_stitching_policy import (
+from ..models.stitching.trajectory_stitching_policy import (
     TrajectoryStitchingPrediction,
 )
 from ..utils.arrays import to_np

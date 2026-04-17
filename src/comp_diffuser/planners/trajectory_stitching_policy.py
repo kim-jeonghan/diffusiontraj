@@ -4,22 +4,20 @@ import einops
 import numpy as np
 import torch
 
-from ...guides.comp.traj_blender import Traj_Blender
-from ...guides.comp.trajectory_batches import InverseDynamicsTrajectories
-from ...utils.arrays import to_np
-from ...utils.composition.plan_utils import split_trajs_list_by_prob
-from ...utils.composition.trajectory_ranking import (
+from ..guides.comp.traj_blender import Traj_Blender
+from ..guides.comp.trajectory_batches import InverseDynamicsTrajectories
+from ..models.common.helpers import apply_conditioning
+from ..models.diffusion.trajectory_stitching_diffusion import StitchingDiffusion
+from ..utils.arrays import to_np
+from ..utils.composition.plan_utils import split_trajs_list_by_prob
+from ..utils.composition.trajectory_ranking import (
     compute_ovlp_dist,
     get_np_trajs_list,
     pick_top_n_trajs,
 )
-from ...utils.planning_config import (
+from ..utils.planning_config import (
     normalize_trajectory_blender_config,
     normalize_trajectory_stitching_policy_config,
-)
-from ..helpers import apply_conditioning
-from . import (
-    StitchingDiffusion,
 )
 
 
@@ -354,14 +352,10 @@ class TrajectoryStitchingPolicy:
         actions = np.zeros(shape=(*sample.shape[0:2], self.action_dim))
         sample = to_np(sample)
         actions = self.normalizer.unnormalize(actions, "actions")
-        # actions = np.tanh(actions)
 
         ## extract first action
         action = actions[0, 0]
 
-        # pdb.set_trace()
-
-        # if debug:
         normed_observations = sample[:, :, 0:]
         observations = self.normalizer.unnormalize(normed_observations, "observations")
 
@@ -374,8 +368,6 @@ class TrajectoryStitchingPrediction:
         """
         pick_traj: np2d unnormed (tot_hzn,dim), the traj to follow
         trajs_list_topn_bl: np3d unnormed (B,tot_hzn,dim), all topn
-
-
         """
         self.pick_traj = pick_traj
         self.trajs_list_topn_bl = trajs_list_topn_bl

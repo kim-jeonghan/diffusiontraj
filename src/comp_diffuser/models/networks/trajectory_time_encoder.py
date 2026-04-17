@@ -5,12 +5,12 @@ import torch
 import torch.nn as nn
 
 from ...utils.eval_utils import print_color
-from ..helpers import (
+from ..common.nn_blocks import (
     Conv1dBlock,
     Downsample1d,
     SinusoidalPosEmb,
 )
-from ..hi_helpers import Hi_ResidualTemporalBlock
+from .residual_temporal_block import HiResidualTemporalBlock
 
 
 class TrajectoryTimeEncoder(nn.Module):
@@ -74,7 +74,7 @@ class TrajectoryTimeEncoder(nn.Module):
         ### ----------------------------------------------------------------
 
         ## class type of resiudal block
-        res_block_type = Hi_ResidualTemporalBlock
+        res_block_type = HiResidualTemporalBlock
 
         self.downs = nn.ModuleList([])
 

@@ -1,7 +1,7 @@
 import numpy as np
 
 from ..datasets.normalization import DatasetNormalizer
-from ..models.trajectory_stitching import (
+from ..models.diffusion.trajectory_stitching_diffusion import (
     StitchingDiffusion,
 )
 from ..utils.composition.trajectory_ranking import get_np_trajs_list

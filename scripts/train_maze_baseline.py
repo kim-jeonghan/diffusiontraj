@@ -153,7 +153,9 @@ obs_trajs, act_trajs, boundary_conditions = batch
 #     if 'diffusion_model' not in k:
 #         print(k)
 ##----
-loss, _ = diffusion_model.loss(x_clean=obs_trajs, cond_start_goal=boundary_conditions)
+loss, _ = diffusion_model.loss(
+    x_clean=obs_trajs, boundary_conditions=boundary_conditions
+)
 loss.backward()
 # pdb.set_trace()
 print("✓")

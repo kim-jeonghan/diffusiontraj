@@ -6,7 +6,7 @@ from ...utils.eval_utils import print_color
 
 # PositionalEncoding2D,
 # Conv1dBlock_dd,
-from ..helpers import (
+from ..common.nn_blocks import (
     Conv1dBlock,
     Downsample1d,
     SinusoidalPosEmb,
@@ -140,7 +140,6 @@ class ConditionalTemporalUNet(nn.Module):
             f"[TemporalUnet_WCond] {time_dim=}, {tot_cond_dim=}, {self.ext_cond_dim=}"
         )
         # pdb.set_trace()
-        self.input_t_type = "1d"
 
         self.downs = nn.ModuleList([])
         self.ups = nn.ModuleList([])

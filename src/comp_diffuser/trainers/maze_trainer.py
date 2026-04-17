@@ -5,9 +5,10 @@ import einops
 import torch
 import wandb
 
+from ..models.common.helpers import apply_conditioning
+
 # from comp_diffuser.models.diffusion import GaussianDiffusion
 from ..models.diffusion.maze_diffusion import MazeGaussianDiffusion
-from ..models.helpers import apply_conditioning
 from ..utils.arrays import apply_dict, to_device, to_device_tp, to_np
 from ..utils.eval_utils import ben_xy_to_luo_rowcol, print_color
 from ..utils.timer import Timer
@@ -110,7 +111,7 @@ class MazeTrainer(object):
                     boundary_conditions = {}
                 # loss, infos = self.model.loss(*batch)
                 loss, infos = self.model.loss(
-                    x_clean=obs_trajs, cond_start_goal=boundary_conditions
+                    x_clean=obs_trajs, boundary_conditions=boundary_conditions
                 )
 
                 # pdb.set_trace()

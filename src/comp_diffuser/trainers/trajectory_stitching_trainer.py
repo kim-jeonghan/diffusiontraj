@@ -5,8 +5,8 @@ import einops
 import torch
 import wandb
 
-from ..models.helpers import apply_conditioning
-from ..models.trajectory_stitching.trajectory_stitching_diffusion import (
+from ..models.common.helpers import apply_conditioning
+from ..models.diffusion.trajectory_stitching_diffusion import (
     StitchingDiffusion,
 )
 from ..utils.arrays import apply_dict, to_device, to_device_tp, to_np
@@ -111,7 +111,7 @@ class TrajectoryStitchingTrainer(object):
                     boundary_conditions = {}
                 # loss, infos = self.model.loss(*batch)
                 loss, infos = self.model.loss(
-                    x_clean=obs_trajs, cond_start_goal=boundary_conditions
+                    x_clean=obs_trajs, boundary_conditions=boundary_conditions
                 )
 
                 # pdb.set_trace()

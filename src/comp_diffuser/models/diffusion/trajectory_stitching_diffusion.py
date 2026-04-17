@@ -6,9 +6,9 @@ from tqdm import tqdm
 from ...utils.arrays import batch_repeat_tensor_in_dict
 from ...utils.eval_utils import print_color
 from ..common.base_diffusion import BaseDiffusion
+from ..common.helpers import apply_conditioning
 from ..common.model_outputs import ModelPrediction
-from ..helpers import apply_conditioning
-from .trajectory_stitching_temporal_unet import (
+from ..networks.trajectory_stitching_temporal_unet import (
     StitchingTemporalUNet,
 )
 
@@ -74,7 +74,6 @@ class StitchingDiffusion(BaseDiffusion):
             self.use_eta_noise = False
 
     # ------------------------------------------ sampling ------------------------------------------#
-
     def p_mean_variance(self, x_t, t_2d, cond, return_modelout=False):
         if cond["use_conditioning"]:
             x_2, t_2d_2, cond_2 = batch_repeat_tensor_in_dict(x_t, t_2d, cond, n_rp=2)
@@ -87,7 +86,9 @@ class StitchingDiffusion(BaseDiffusion):
         else:
             out_model = self.small_model_pred(x_t, t_2d, cond)
 
-        x_0 = self.schedule.predict_start_from_noise(x_t, t_2d=t_2d, noise=out_model)
+        x_0 = self.schedule.predict_start_from_noise(
+            x_t, t_2d=t_2d, noise=out_model, predict_epsilon=self.predict_epsilon
+        )
         x_0.clamp_(-1.0, 1.0)
 
         model_mean, posterior_variance, posterior_log_variance = (
@@ -118,7 +119,7 @@ class StitchingDiffusion(BaseDiffusion):
                 t_1d_end=timesteps[:, 0],
                 t_type=g_cond["t_type"],
                 is_noisy=False,
-                stgl_cond={},
+                boundary_conditions={},
             )
             segment_conditioning["use_conditioning"] = True
         elif g_cond["conditioning_mode"] == "boundary_only":
@@ -130,7 +131,7 @@ class StitchingDiffusion(BaseDiffusion):
                 t_1d_end=timesteps[:, 0],
                 t_type=g_cond["t_type"],
                 is_noisy=False,
-                stgl_cond=g_cond["boundary_conditions"],
+                boundary_conditions=g_cond["boundary_conditions"],
             )
             segment_conditioning["use_conditioning"] = True
         elif g_cond["conditioning_mode"] == "start_boundary_end_overlap":
@@ -143,7 +144,7 @@ class StitchingDiffusion(BaseDiffusion):
                 t_1d_end=timesteps[:, 0],
                 t_type=g_cond["t_type"],
                 is_noisy=False,
-                stgl_cond={0: g_cond["boundary_conditions"][0]},
+                boundary_conditions={0: g_cond["boundary_conditions"][0]},
             )
             segment_conditioning["use_conditioning"] = True
         elif g_cond["conditioning_mode"] == "start_overlap_goal_boundary":
@@ -156,7 +157,7 @@ class StitchingDiffusion(BaseDiffusion):
                 t_1d_end=timesteps[:, 0],
                 t_type=g_cond["t_type"],
                 is_noisy=False,
-                stgl_cond={
+                boundary_conditions={
                     self.horizon - 1: g_cond["boundary_conditions"][self.horizon - 1]
                 },
             )
@@ -390,7 +391,7 @@ class StitchingDiffusion(BaseDiffusion):
         }
         return x_noisy, segment_conditioning
 
-    def loss(self, x_clean, cond_start_goal):
+    def loss(self, x_clean, boundary_conditions):
         assert self.is_direct_train
         batch_size = len(x_clean)
         t_1d = torch.randint(
@@ -405,7 +406,7 @@ class StitchingDiffusion(BaseDiffusion):
             x_noisy,
             t_1d[:, 0],
             t_1d[:, 0].clone(),
-            cond_start_goal,
+            boundary_conditions,
             is_rand=True,
         )
 
@@ -428,7 +429,7 @@ class StitchingDiffusion(BaseDiffusion):
         if self.predict_epsilon:
             pred_noise = torch.clamp(out_pred, -self.clip_noise, self.clip_noise)
             x_0 = self.schedule.predict_start_from_noise(
-                x_t=x, t_2d=t_2d, noise=pred_noise
+                x_t=x, t_2d=t_2d, noise=pred_noise, predict_epsilon=True
             )
         else:
             x_0 = out_pred
@@ -450,13 +451,13 @@ class StitchingDiffusion(BaseDiffusion):
         t_1d_end: torch.Tensor,
         t_type: str,
         is_noisy,
-        stgl_cond: dict,
+        boundary_conditions: dict,
     ):
         """
         if st_traj is not None, then do st traj inpainting;
         if end_traj is not None, then do end traj inpainting;
-        if 0 in stgl_cond, then do start inpainting;
-        if hzn-1 in stgl_cond, then do end inpainting;
+        if 0 in boundary_conditions, then do start inpainting;
+        if hzn-1 in boundary_conditions, then do end inpainting;
         """
         assert t_1d_st.ndim == 1 and t_1d_end.ndim == 1
 
@@ -469,11 +470,11 @@ class StitchingDiffusion(BaseDiffusion):
             st_is_drop = torch.zeros(
                 size=(batch_size,), dtype=torch.bool, device=device
             )
-            assert 0 not in stgl_cond.keys()
+            assert 0 not in boundary_conditions
 
-        if 0 in stgl_cond.keys():
+        if 0 in boundary_conditions:
             assert st_traj is None
-            x_et = apply_conditioning(x_et, {0: stgl_cond[0]}, 0)
+            x_et = apply_conditioning(x_et, {0: boundary_conditions[0]}, 0)
             is_st_inpat = torch.ones(
                 size=(batch_size,), dtype=torch.bool, device=device
             )
@@ -489,11 +490,13 @@ class StitchingDiffusion(BaseDiffusion):
             end_is_drop = torch.zeros(
                 size=(batch_size,), dtype=torch.bool, device=device
             )
-            assert hzn_minus1 not in stgl_cond
+            assert hzn_minus1 not in boundary_conditions
 
-        if hzn_minus1 in stgl_cond.keys():
+        if hzn_minus1 in boundary_conditions:
             assert end_traj is None
-            x_et = apply_conditioning(x_et, {hzn_minus1: stgl_cond[hzn_minus1]}, 0)
+            x_et = apply_conditioning(
+                x_et, {hzn_minus1: boundary_conditions[hzn_minus1]}, 0
+            )
             is_end_inpat = torch.ones(
                 size=(batch_size,), dtype=torch.bool, device=device
             )
@@ -502,8 +505,8 @@ class StitchingDiffusion(BaseDiffusion):
                 size=(batch_size,), dtype=torch.bool, device=device
             )
 
-        assert ((st_traj is not None) or 0 in stgl_cond) and (
-            (end_traj is not None) or hzn_minus1 in stgl_cond
+        assert ((st_traj is not None) or 0 in boundary_conditions) and (
+            (end_traj is not None) or hzn_minus1 in boundary_conditions
         )
 
         if t_type == "rand":
@@ -623,7 +626,7 @@ class StitchingDiffusion(BaseDiffusion):
                             t_1d_end=timesteps[:, 0],
                             t_type="0",
                             is_noisy=True,
-                            stgl_cond={0: boundary_conditions[0]},
+                            boundary_conditions={0: boundary_conditions[0]},
                         )
                     )
                     segment_conditioning["use_conditioning"] = True
@@ -663,7 +666,7 @@ class StitchingDiffusion(BaseDiffusion):
                             t_1d_end=timesteps[:, 0],
                             t_type="0",
                             is_noisy=True,
-                            stgl_cond={},
+                            boundary_conditions={},
                         )
                     )
                     segment_conditioning["use_conditioning"] = True
@@ -699,7 +702,9 @@ class StitchingDiffusion(BaseDiffusion):
                             t_1d_end=timesteps[:, 0],
                             t_type="0",
                             is_noisy=True,
-                            stgl_cond={horizon - 1: boundary_conditions[horizon - 1]},
+                            boundary_conditions={
+                                horizon - 1: boundary_conditions[horizon - 1]
+                            },
                         )
                     )
                     segment_conditioning["use_conditioning"] = True
@@ -785,7 +790,7 @@ class StitchingDiffusion(BaseDiffusion):
                             t_1d_end=timesteps[:, 0],
                             t_type="0",
                             is_noisy=True,
-                            stgl_cond={0: boundary_conditions[0]},
+                            boundary_conditions={0: boundary_conditions[0]},
                         )
                     )
                     segment_conditioning["use_conditioning"] = True
@@ -825,7 +830,7 @@ class StitchingDiffusion(BaseDiffusion):
                             t_1d_end=timesteps[:, 0],
                             t_type="0",
                             is_noisy=True,
-                            stgl_cond={},
+                            boundary_conditions={},
                         )
                     )
                     segment_conditioning["use_conditioning"] = True
@@ -861,7 +866,9 @@ class StitchingDiffusion(BaseDiffusion):
                             t_1d_end=timesteps[:, 0],
                             t_type="0",
                             is_noisy=True,
-                            stgl_cond={horizon - 1: boundary_conditions[horizon - 1]},
+                            boundary_conditions={
+                                horizon - 1: boundary_conditions[horizon - 1]
+                            },
                         )
                     )
                     segment_conditioning["use_conditioning"] = True
@@ -947,7 +954,7 @@ class StitchingDiffusion(BaseDiffusion):
                         t_1d_end=timesteps[:, 0],
                         t_type="0",
                         is_noisy=True,
-                        stgl_cond={0: boundary_conditions[0]},
+                        boundary_conditions={0: boundary_conditions[0]},
                     )
                 elif i_tj > 0 and i_tj < num_segments - 1:
                     x_p_i_minus_1 = segment_samples[i_tj - 1]
@@ -962,7 +969,7 @@ class StitchingDiffusion(BaseDiffusion):
                         t_1d_end=timesteps[:, 0],
                         t_type="0",
                         is_noisy=True,
-                        stgl_cond={},
+                        boundary_conditions={},
                     )
                 elif i_tj == num_segments - 1:
                     x_p_i_minus_1 = segment_samples[i_tj - 1]
@@ -975,7 +982,9 @@ class StitchingDiffusion(BaseDiffusion):
                         t_1d_end=timesteps[:, 0],
                         t_type="0",
                         is_noisy=True,
-                        stgl_cond={horizon - 1: boundary_conditions[horizon - 1]},
+                        boundary_conditions={
+                            horizon - 1: boundary_conditions[horizon - 1]
+                        },
                     )
 
                 x_p_list_cur_t[i_tj] = x_p_i
@@ -1051,7 +1060,7 @@ class StitchingDiffusion(BaseDiffusion):
     def comp_pred_p_loop_n_GSC(
         self,
         shape,
-        stgl_cond,
+        boundary_conditions,
         n_comp,
         do_mcmc=False,
         return_diffusion=False,
@@ -1064,7 +1073,7 @@ class StitchingDiffusion(BaseDiffusion):
 
         x_p_list = [torch.randn(shape, device=device) for _ in range(n_comp)]
         x_dfu_all = [x_p_list]
-        assert len(stgl_cond[0]) == shape[0]
+        assert len(boundary_conditions[0]) == shape[0]
 
         time_idx = (
             self.ddim_set_timesteps(self.ddim_num_inference_steps)
@@ -1093,7 +1102,7 @@ class StitchingDiffusion(BaseDiffusion):
                         t_1d_end=timesteps[:, 0],
                         t_type="0",
                         is_noisy=True,
-                        stgl_cond={0: stgl_cond[0]},
+                        boundary_conditions={0: boundary_conditions[0]},
                     )
                     tj_cond_p_i["end_overlap_is_drop"] = None
                     tj_cond_p_i["use_conditioning"] = False
@@ -1148,7 +1157,7 @@ class StitchingDiffusion(BaseDiffusion):
                         t_1d_end=timesteps[:, 0],
                         t_type="0",
                         is_noisy=True,
-                        stgl_cond={hzn - 1: stgl_cond[hzn - 1]},
+                        boundary_conditions={hzn - 1: boundary_conditions[hzn - 1]},
                     )
                     tj_cond_p_i["start_overlap_is_drop"] = None
                     tj_cond_p_i["use_conditioning"] = False
@@ -1170,9 +1179,9 @@ class StitchingDiffusion(BaseDiffusion):
             if return_diffusion:
                 x_dfu_all.append([_ for _ in x_p_list])
 
-        x_p_list[0] = apply_conditioning(x_p_list[0], {0: stgl_cond[0]}, 0)
+        x_p_list[0] = apply_conditioning(x_p_list[0], {0: boundary_conditions[0]}, 0)
         x_p_list[-1] = apply_conditioning(
-            x_p_list[-1], {hzn - 1: stgl_cond[hzn - 1]}, 0
+            x_p_list[-1], {hzn - 1: boundary_conditions[hzn - 1]}, 0
         )
 
         if return_diffusion:
@@ -1225,7 +1234,7 @@ class StitchingDiffusion(BaseDiffusion):
                         t_1d_end=timesteps[:, 0] - 1,
                         t_type="0",
                         is_noisy=True,
-                        stgl_cond={0: boundary_conditions[0]},
+                        boundary_conditions={0: boundary_conditions[0]},
                     )
                     tj_cond_p_i["use_conditioning"] = True
                     if do_mcmc:
@@ -1255,7 +1264,7 @@ class StitchingDiffusion(BaseDiffusion):
                         t_1d_end=timesteps[:, 0] - 1,
                         t_type="0",
                         is_noisy=True,
-                        stgl_cond={},
+                        boundary_conditions={},
                     )
                     tj_cond_p_i["use_conditioning"] = True
                     if do_mcmc:
@@ -1283,7 +1292,9 @@ class StitchingDiffusion(BaseDiffusion):
                         t_1d_end=timesteps[:, 0],
                         t_type="0",
                         is_noisy=True,
-                        stgl_cond={horizon - 1: boundary_conditions[horizon - 1]},
+                        boundary_conditions={
+                            horizon - 1: boundary_conditions[horizon - 1]
+                        },
                     )
                     tj_cond_p_i["use_conditioning"] = True
                     if do_mcmc:

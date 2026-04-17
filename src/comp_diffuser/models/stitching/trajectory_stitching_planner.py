@@ -4,7 +4,7 @@ from os.path import join
 
 import numpy as np
 
-from ...datasets import datasets as datasets
+from ...datasets import load_env_gym_robo, load_environment
 from ...datasets.d4rl import Is_Gym_Robot_Env
 from ...rendering.maze_renderer import Maze2DRenderer
 from ...utils.composition.composition_serialization import (
@@ -24,9 +24,7 @@ from ...utils.eval_utils import (
 from ...utils.planning_config import extract_planner_runtime_config
 from ...utils.serialization import mkdir
 from ...utils.setup import set_seed
-from . import (
-    StitchingDiffusion,
-)
+from ..diffusion.trajectory_stitching_diffusion import StitchingDiffusion
 from .trajectory_stitching_policy import (
     TrajectoryStitchingPolicy,
 )
@@ -65,9 +63,9 @@ class TrajectoryStitchingMazePlanner:
         args = self.args
 
         if Is_Gym_Robot_Env:
-            self.env = datasets.load_env_gym_robo(args.dataset)
+            self.env = load_env_gym_robo(args.dataset)
         else:
-            self.env = datasets.load_environment(args.dataset)
+            self.env = load_environment(args.dataset)
             self.env.seed(0)  ## default
 
         assert self.env.reward_type == "sparse"

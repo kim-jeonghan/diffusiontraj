@@ -2,46 +2,15 @@ import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import numpy as np
 
-Extra_Colors = [
-    "aquamarine",
-    "springgreen",
-    "slateblue",
-    "tomato",
-    "hotpink",
-    "yellow",
-    "peru",
-    "cyan",
-]
-Extra_Alpha = [
-    0.4,
-] * len(Extra_Colors)
-# Sub_Traj_Colors = ["Blues", "Greys", "Oranges", "Purples", "Greens", "pink",] + Extra_Colors
-# Sub_Sg_Colors = ["blue", "grey", "orange", "purple", "green", "pink"] + Extra_Colors
-# Sub_Traj_Alpha = [0.55, 0.5, 0.35, 0.4, 0.5, 0.4] + Extra_Alpha
-## v2 Jan 22, change color order, "Purples",
-Sub_Traj_Colors = [
-    "Blues",
-    "Greens",
-    "Oranges",
-    "Purples",
-    "Greys",
-] + Extra_Colors
-Sub_Sg_Colors = [
-    "blue",
-    "green",
-    "orange",
-    "purple",
-    "grey",
-] + Extra_Colors
-# Sub_Traj_Alpha = [0.55, 0.6, 0.28, 0.30, 0.4, ] + Extra_Alpha ## purple ori: 0.3;
-Sub_Traj_Alpha = [
-    0.55,
-    0.6,
-    0.3,
-    0.32,
-    0.35,
-] + Extra_Alpha  ## Feb 4
+# fmt: off
+Extra_Colors = ["aquamarine", "springgreen", "slateblue", "tomato", "hotpink", "yellow", "peru", "cyan"]
+Extra_Alpha = [0.4] * len(Extra_Colors)
 
+Sub_Traj_Colors = ["Blues", "Greens", "Oranges", "Purples", "Greys"] + Extra_Colors
+Sub_Sg_Colors = ["blue", "green", "orange", "purple", "grey"] + Extra_Colors
+
+Sub_Traj_Alpha = [0.55, 0.6, 0.3, 0.32, 0.35] + Extra_Alpha
+# fmt: on
 
 """From the Diffusion Forcing Repo"""
 

@@ -1,7 +1,7 @@
 import torch.nn as nn
 from einops.layers.torch import Rearrange
 
-from ..helpers import Conv1dBlock_dd
+from ..common.nn_blocks import Conv1dBlock, Conv1dBlock_dd
 
 
 class ResidualTemporalBlock(nn.Module):
@@ -18,7 +18,6 @@ class ResidualTemporalBlock(nn.Module):
         resblock_config={},
         **kwargs,
     ):
-        """kwargs: place holder for some useless args e.g. wall_embed_dim"""
         super().__init__()
         assert not conv_zero_init
         force_residual_conv = resblock_config.get("force_residual_conv", False)
@@ -30,7 +29,7 @@ class ResidualTemporalBlock(nn.Module):
             [
                 convblock_type(
                     inp_channels, out_channels, kernel_size, mish, conv_zero_init=False
-                ),  # conv_zero_init, only difference bewteen ori and ori2
+                ),
                 convblock_type(
                     out_channels,
                     out_channels,
@@ -41,13 +40,7 @@ class ResidualTemporalBlock(nn.Module):
             ]
         )
 
-        if mish:
-            act_fn = nn.Mish()
-        else:
-            act_fn = nn.SiLU()
-
-        # pdb.set_trace() ## check time_mlp_config
-
+        act_fn = nn.Mish() if mish else nn.SiLU()
         if time_mlp_config == 2:
             self.time_mlp = nn.Sequential(
                 act_fn,
@@ -106,4 +99,40 @@ class ResidualTemporalBlock(nn.Module):
         out = self.blocks[0](x) + self.time_mlp(t)
         out = self.blocks[1](out)
 
+        return out + self.residual_conv(x)
+
+
+class HiResidualTemporalBlock(nn.Module):
+    """Deeper time MLP variant used by TrajectoryTimeEncoder."""
+
+    def __init__(self, inp_channels, out_channels, embed_dim, horizon, kernel_size=5):
+        super().__init__()
+
+        self.blocks = nn.ModuleList(
+            [
+                Conv1dBlock(inp_channels, out_channels, kernel_size),
+                Conv1dBlock(out_channels, out_channels, kernel_size),
+            ]
+        )
+
+        self.time_mlp = nn.Sequential(
+            nn.Linear(embed_dim, embed_dim * 2),
+            nn.Mish(),
+            nn.Linear(embed_dim * 2, out_channels),
+            Rearrange("batch t -> batch t 1"),
+        )
+
+        self.residual_conv = (
+            nn.Conv1d(inp_channels, out_channels, 1)
+            if inp_channels != out_channels
+            else nn.Identity()
+        )
+
+    def forward(self, x, t):
+        """
+        x : [ batch_size x inp_channels x horizon ]
+        t : [ batch_size x embed_dim ]
+        """
+        out = self.blocks[0](x) + self.time_mlp(t)
+        out = self.blocks[1](out)
         return out + self.residual_conv(x)

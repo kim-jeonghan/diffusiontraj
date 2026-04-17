@@ -45,7 +45,7 @@ base = {
         "tot_horizon": tot_horizon,
         ##
         ## cnn model
-        "model": "models.diffusion.maze_temporal_unet.MazeTemporalUNet",
+        "model": "models.networks.maze_temporal_unet.MazeTemporalUNet",
         "base_dim": 96,
         "dim_mults": (1, 2, 4, 8),
         "time_dim": time_dim,
@@ -53,7 +53,6 @@ base = {
             t_seq_encoder_type="mlp",
             cat_t_w=True,
             resblock_ksize=5,
-            energy_mode=False,
             time_mlp_config=3,
             ###
             inpaint_token_dim=32,

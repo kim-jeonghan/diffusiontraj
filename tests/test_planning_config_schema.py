@@ -1,4 +1,4 @@
-from comp_diffuser.models.trajectory_stitching.trajectory_stitching_policy import (
+from comp_diffuser.models.stitching.trajectory_stitching_policy import (
     TrajectoryStitchingPolicy,
 )
 from comp_diffuser.planners.maze_policy import MazePolicy

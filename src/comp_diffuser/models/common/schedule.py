@@ -3,7 +3,7 @@ from __future__ import annotations
 import torch
 from torch import nn
 
-from ..helpers import cosine_beta_schedule, extract_2d
+from .helpers import cosine_beta_schedule, extract_2d
 
 
 class DiffusionSchedule(nn.Module):

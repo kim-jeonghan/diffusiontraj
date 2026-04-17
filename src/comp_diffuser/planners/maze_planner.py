@@ -5,7 +5,7 @@ from os.path import join
 
 import numpy as np
 
-from ..datasets import datasets as datasets
+from ..datasets import load_environment
 from ..guides.policies_invdyn import Policy_InvDyn
 from ..utils.eval_utils import print_color, rename_fn, save_img, save_json
 from ..utils.serialization import load_diffusion, mkdir
@@ -30,7 +30,7 @@ class Maze2DEnvPlanner:
         """
         used in a separate launch evaluation, where model should be loaded from file
         """
-        self.env = datasets.load_environment(args.dataset)
+        self.env = load_environment(args.dataset)
         self.env.seed(0)  ## default
 
         ## loading the dataset is too slow...

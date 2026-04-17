@@ -4,8 +4,9 @@ import numpy as np
 import torch
 from torch import nn
 
-from ..common.schedule import DiffusionSchedule
-from ..helpers import Losses, extract_2d
+from .helpers import extract_2d
+from .losses import Losses
+from .schedule import DiffusionSchedule
 
 
 class BaseDiffusion(nn.Module):
@@ -15,7 +16,7 @@ class BaseDiffusion(nn.Module):
         p_mean_variance(self, x_t, t_2d, cond, return_modelout=False)
         model_predictions(self, x, t_2d, cond) -> ModelPrediction
         p_losses(self, x_0, x_noisy, noise, t_2d, cond) -> (loss, info)
-        loss(self, x_clean, cond_start_goal) -> (loss, info)
+        loss(self, x_clean, boundary_conditions) -> (loss, info)
         p_sample_loop(self, shape, g_cond, return_diffusion=False)
         ddim_p_sample_loop(self, shape, g_cond, return_diffusion=False)
         conditional_sample(self, g_cond, *args, horizon=None, **kwargs)
@@ -87,12 +88,9 @@ class BaseDiffusion(nn.Module):
         return loss_weights
 
     def small_model_pred(self, x, t_2d, cond: dict) -> torch.Tensor:
-        if self.model.input_t_type == "1d":
-            assert (t_2d[0] == t_2d[0, 0]).all(), "sanity check"
-            t_1d = t_2d[:, 0]
-            return self.model(x, t_1d, cond)
-        else:
-            raise NotImplementedError
+        assert (t_2d[0] == t_2d[0, 0]).all(), "sanity check"
+        t_1d = t_2d[:, 0]
+        return self.model(x, t_1d, cond)
 
     def ddim_set_timesteps(self, num_inference_steps: int) -> np.ndarray:
         self.num_inference_steps = num_inference_steps
