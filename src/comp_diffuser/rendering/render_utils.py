@@ -130,6 +130,26 @@ def plot_start_goal(
     draw_star((goal_x, goal_y), radius=size_in_goal, color=sg_color)
 
 
+def snap_point_to_open_cell(point, maze_grid):
+    valid_centers = []
+    for row_idx, row in enumerate(maze_grid, start=1):
+        for col_idx, cell in enumerate(row, start=1):
+            if cell != "#":
+                valid_centers.append(np.array([row_idx, col_idx], dtype=np.float32))
+    valid_centers = np.stack(valid_centers, axis=0)
+    distances = np.linalg.norm(
+        valid_centers - np.asarray(point, dtype=np.float32), axis=1
+    )
+    return valid_centers[np.argmin(distances)]
+
+
+def snap_start_goal_to_grid(start_goal, maze_grid):
+    start, goal = start_goal
+    return snap_point_to_open_cell(start, maze_grid), snap_point_to_open_cell(
+        goal, maze_grid
+    )
+
+
 # MAZE_PLOT_BG_SIZE = {}
 
 
@@ -325,6 +345,7 @@ def make_traj_images(
                 trajs_ball[batch_idx][0, :],
                 trajs_ball[batch_idx][-1, :],
             )
+            start_goal_ball = snap_start_goal_to_grid(start_goal_ball, maze_grid)
             plot_start_goal(
                 ax,
                 start_goal_ball,
@@ -348,6 +369,7 @@ def make_traj_images(
                 trajs_2[batch_idx, 0, :],
                 trajs_2[batch_idx, -1, :],
             )
+            start_goal_2 = snap_start_goal_to_grid(start_goal_2, maze_grid)
             plot_start_goal(ax, start_goal_2, sg_color="blue")
         if trajs_3 is not None:
             plt.scatter(
@@ -364,6 +386,7 @@ def make_traj_images(
                 trajs_3[batch_idx, 0, :],
                 trajs_3[batch_idx, -1, :],
             )
+            start_goal_3 = snap_start_goal_to_grid(start_goal_3, maze_grid)
             plot_start_goal(ax, start_goal_3, sg_color="grey")
 
         if trajs_4 is not None:
@@ -381,6 +404,7 @@ def make_traj_images(
                 trajs_4[batch_idx, 0, :],
                 trajs_4[batch_idx, -1, :],
             )
+            start_goal_4 = snap_start_goal_to_grid(start_goal_4, maze_grid)
             plot_start_goal(ax, start_goal_4, sg_color="orange")
 
         if trajs_list is not None:
@@ -432,10 +456,12 @@ def make_traj_images(
                     trajs_p[batch_idx, 0, :],
                     trajs_p[batch_idx, -1, :],
                 )
+                tmp_start_goal = snap_start_goal_to_grid(tmp_start_goal, maze_grid)
                 plot_start_goal(ax, tmp_start_goal, sg_color=tmp_color_2)
 
         if plot_end_points and is_plot_main_tj:  ## plot statt and goal
             start_goal = (start[batch_idx], goal[batch_idx])
+            start_goal = snap_start_goal_to_grid(start_goal, maze_grid)
             plot_start_goal(ax, start_goal)
 
         if titles is not None:

@@ -2,8 +2,14 @@ import numpy as np
 import torch
 import wandb
 
+from comp_diffuser.models.diffusion.maze_diffusion import MazeGaussianDiffusion
 from comp_diffuser.trainers.maze_trainer import MazeTrainer
-from comp_diffuser.utils.arrays import batch_copy, batchify, report_parameters
+from comp_diffuser.utils.arrays import (
+    batch_copy,
+    batchify,
+    report_parameters,
+    set_device,
+)
 from comp_diffuser.utils.config import Config
 from comp_diffuser.utils.setup import ArgsParser as BaseArgsParser
 
@@ -23,6 +29,7 @@ class ArgsParser(BaseArgsParser):
 
 
 args = ArgsParser().parse_args("diffusion")
+set_device(args.device)
 
 
 # -----------------------------------------------------------------------------#
@@ -129,6 +136,13 @@ trainer_config = Config(
 
 
 diffusion_model = diffusion_model_config(model=model)
+
+if not isinstance(diffusion_model, MazeGaussianDiffusion):
+    raise ValueError(
+        "`train_maze_baseline.py` requires a baseline Maze config that builds "
+        f"`MazeGaussianDiffusion`, but got `{type(diffusion_model).__name__}`. "
+        "Do not pass a trajectory stitching config here."
+    )
 
 trainer = trainer_config(
     diffusion_model=diffusion_model,

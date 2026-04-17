@@ -5,7 +5,12 @@ import wandb
 from comp_diffuser.trainers.trajectory_stitching_trainer import (
     TrajectoryStitchingTrainer,
 )
-from comp_diffuser.utils.arrays import batch_copy, batchify, report_parameters
+from comp_diffuser.utils.arrays import (
+    batch_copy,
+    batchify,
+    report_parameters,
+    set_device,
+)
 from comp_diffuser.utils.config import Config
 from comp_diffuser.utils.setup import ArgsParser as BaseArgsParser
 
@@ -25,6 +30,7 @@ class ArgsParser(BaseArgsParser):
 
 
 args = ArgsParser().parse_args("diffusion")
+set_device(args.device)
 
 
 # -----------------------------------------------------------------------------#

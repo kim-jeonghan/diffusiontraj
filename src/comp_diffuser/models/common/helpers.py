@@ -5,6 +5,8 @@ import torch
 def extract(a, t, x_shape):
     """usually return (B, 1, 1)"""
     assert a.ndim == 1
+    if a.device != t.device:
+        a = a.to(t.device)
     b, *_ = t.shape
     out = a.gather(-1, t)
     return out.reshape(b, *((1,) * (len(x_shape) - 1)))
@@ -13,6 +15,8 @@ def extract(a, t, x_shape):
 def extract_2d(a, t, x_shape):
     """extract to t, to two dimension, e.g., return (B, H, 1)"""
     assert a.ndim == 1 and t.ndim == 2
+    if a.device != t.device:
+        a = a.to(t.device)
     b, h, *_ = t.shape
     out = a[t]
     out = out.reshape(b, h, *((1,) * (len(x_shape) - 2)))

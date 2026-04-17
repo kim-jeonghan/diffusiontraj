@@ -81,8 +81,8 @@ class StitchingTemporalUNet(BaseTemporalUNet):
         half_fd: bool,
     ) -> torch.Tensor:
         b_size = x.shape[0]
-        is_st_inpat = cond["is_st_inpat"]
-        is_end_inpat = cond["is_end_inpat"]
+        is_st_inpat = cond.get("is_st_inpat", cond.get("uses_start_inpaint"))
+        is_end_inpat = cond.get("is_end_inpat", cond.get("uses_end_inpaint"))
         assert (
             is_st_inpat.shape[0] == b_size
             and is_st_inpat.ndim == 1
@@ -96,12 +96,13 @@ class StitchingTemporalUNet(BaseTemporalUNet):
 
         cond_emb = self.time_mlp(time)
 
-        st_ovlp_is_drop = cond["st_ovlp_is_drop"]
-        end_ovlp_is_drop = cond["end_ovlp_is_drop"]
+        st_ovlp_is_drop = cond.get("st_ovlp_is_drop", cond.get("start_overlap_is_drop"))
+        end_ovlp_is_drop = cond.get("end_ovlp_is_drop", cond.get("end_overlap_is_drop"))
 
         if st_ovlp_is_drop is not None:
             st_ovlp_feat = self.st_ovlp_model(
-                cond["st_ovlp_traj"], time=cond["st_ovlp_t"]
+                cond.get("st_ovlp_traj", cond.get("start_overlap_traj")),
+                time=cond.get("st_ovlp_t", cond.get("start_overlap_t")),
             )
             assert len(st_ovlp_is_drop) == len(st_ovlp_feat)
             assert st_ovlp_is_drop.dtype == torch.bool
@@ -114,7 +115,8 @@ class StitchingTemporalUNet(BaseTemporalUNet):
 
         if end_ovlp_is_drop is not None:
             end_ovlp_feat = self.end_ovlp_model(
-                cond["end_ovlp_traj"], time=cond["end_ovlp_t"]
+                cond.get("end_ovlp_traj", cond.get("end_overlap_traj")),
+                time=cond.get("end_ovlp_t", cond.get("end_overlap_t")),
             )
             end_ovlp_feat[end_ovlp_is_drop] = 0.0
             assert end_ovlp_is_drop.dtype == torch.bool
