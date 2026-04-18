@@ -12,7 +12,6 @@ class Maze2DRenderer:
 
     def __init__(self, env, observation_dim=None):
         ## FIXME: multiple env creation...
-        ## Oct 29
         if Is_Gym_Robot_Env:
             self.env = load_env_gym_robo(env)
         else:
@@ -50,7 +49,6 @@ class Maze2DRenderer:
             # tmp_pad_trajs = np.zeros_like(obs_trajs[:ncol-n_res])
             # obs_trajs = np.concatenate([obs_trajs, tmp_pad_trajs], axis=0)
 
-        ## --------- New Jan 4 ------------
         if isinstance(obs_trajs, list):
             ## when the input is a list with diff hzn
             if (
@@ -61,7 +59,6 @@ class Maze2DRenderer:
                 # pdb.set_trace()
             else:
                 obs_trajs = np.array(obs_trajs)
-        ## -------------------------------
 
         assert (
             len(obs_trajs) % ncol == 0

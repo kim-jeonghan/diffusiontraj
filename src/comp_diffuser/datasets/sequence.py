@@ -27,7 +27,7 @@ class SequenceDataset(torch.utils.data.Dataset):
         dset_h5path=None,
         dataset_config={},
     ):
-        self.env = env = load_environment(env)  ## Oct 17
+        self.env = env = load_environment(env)
         env.len_seg = dataset_config.get("len_seg", None)
         env.proc_m2d_ep = dataset_config.get("proc_m2d_ep", True)
 

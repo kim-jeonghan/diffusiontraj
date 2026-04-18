@@ -143,7 +143,6 @@ class ReplayBuffer:
             self._dict[key][self._count, :path_length] = array
 
         ## in ogbench, just ['observations', 'actions']
-        # pdb.set_trace() ## Dec 22 path.keys()?, can switch if order below
         ## penalize early termination
         # if path['terminals'].any() and self.termination_penalty is not None: ## ori
         if (self.termination_penalty is not None) and path["terminals"].any():

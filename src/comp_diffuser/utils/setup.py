@@ -21,7 +21,7 @@ def set_seed(seed):
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)  ## NEW Jan 12 15:32
+    torch.cuda.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = True
 
@@ -235,7 +235,7 @@ class ArgsParser(Tap):
             and "exp_name" in dir(args)
         ):
             args.savepath = os.path.join(args.logbase, args.dataset, args.exp_name)
-            self.savepath = args.savepath  # Luo added, Sep 5-10
+            self.savepath = args.savepath
             self._dict["savepath"] = args.savepath
             if "suffix" in dir(args):
                 args.savepath = os.path.join(args.savepath, args.suffix)

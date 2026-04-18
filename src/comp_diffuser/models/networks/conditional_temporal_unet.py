@@ -99,8 +99,6 @@ class ConditionalTemporalUNet(nn.Module):
             act_fn = nn.Mish()
             self.conv_zero_init = False
 
-        ## TODO: From Here Apr 19
-
         # self.time_mlp = nn.Sequential(
         #     SinusoidalPosEmb(time_dim),
         #     nn.Linear(time_dim, time_dim * 4),
@@ -352,7 +350,6 @@ class ConditionalTemporalUNet(nn.Module):
                 # drop the second half
                 assert b_s % 2 == 0
                 st_ovlp_feat[int(b_s // 2) :] = 0.0 * st_ovlp_feat[int(b_s // 2) :]
-                ## FIXED: Oct 9 Probably a important:
                 end_ovlp_feat[int(b_s // 2) :] = 0.0 * end_ovlp_feat[int(b_s // 2) :]
             else:
                 assert False

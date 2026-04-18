@@ -425,7 +425,7 @@ def make_traj_images(
                     # assert tmp_color_1.islower()
 
                 if sc_size is None:
-                    tj_sc_size = 50  ## default 50 as in Feb 27
+                    tj_sc_size = 50
                 else:
                     tj_sc_size = sc_size
                 # if i_tj < 6:

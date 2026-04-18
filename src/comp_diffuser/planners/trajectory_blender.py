@@ -46,9 +46,7 @@ class TrajBlender:
 
         print(f"{tot_hzn=}")
         # trajs_out = np.zeros( shape=(b_s, tot_hzn, dd) ) ## NOTE: default is float64
-        trajs_out = np.zeros(
-            shape=(b_s, tot_hzn, dd), dtype=np.float32
-        )  ## Dec 2: changed to float32
+        trajs_out = np.zeros(shape=(b_s, tot_hzn, dd), dtype=np.float32)
         cnt_v = np.zeros_like(trajs_out)
         ## copy non-ovlp parts
         for i_c in range(n_comp):

@@ -107,7 +107,6 @@ def get_trajectory_stitching_eval_problem_path(env_name):
     if env_name == "maze2d-large-v1":
         hdf5_path = "data/eval_problems/maze2d_lg_ev_prob_bt2way_nppp3_rprange02.hdf5"
     elif env_name == "PointMaze_Large-v3":  ## Ben
-        ## Oct 29
         hdf5_path = "data/m2d/ev_probs/ben/ben_maze2d_lg_ev_prob_numEp10_eSdSt0.hdf5"
     elif env_name == "PointMaze_Medium-v3":
         hdf5_path = "data/m2d/ev_probs/ben/ben_maze2d_Me_ev_prob_numEp10_eSdSt0.hdf5"

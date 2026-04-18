@@ -54,7 +54,6 @@ def main(args_train, args):
     #                          [5, 8], [5, 8.5]], dtype=np.float32)
     ##---
     pl_seeds = args.pl_seeds
-    ## Oct 30
     from comp_diffuser.datasets.d4rl import Is_Gym_Robot_Env
 
     if len(pl_seeds) == 1:
@@ -110,7 +109,6 @@ if __name__ == "__main__":
             args.env_n_max_steps = 1000  ## ben
         elif "-umaze-" in args_train.dataset:
             # args.num_segments = 5 # umaze h is only 40
-            ## TODO: From Here Jan 19: 1:00 AM
             # args.ddim_eta = 1.0
             # args.ddim_eta = 0.0
             args.plan_horizon = 136  ## aka ncp=5

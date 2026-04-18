@@ -1,13 +1,9 @@
-from collections import namedtuple
-
 import einops
 import torch
 
+from ..types import InverseDynamicsTrajectories
 from ..utils.arrays import apply_dict, to_np, to_torch
 
-InverseDynamicsTrajectories = namedtuple(
-    "InverseDynamicsTrajectories", "actions observations"
-)
 # GuidedTrajectories = namedtuple('GuidedTrajectories', 'actions observations value')
 
 

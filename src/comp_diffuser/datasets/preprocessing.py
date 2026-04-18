@@ -152,7 +152,6 @@ def ben_maze2d_set_terminals(env):
     return _fn
 
 
-## Oct 17, We segment the consecutive trajs into pieces
 def maze2d_set_terminals_seg(env):
     env = load_environment(env) if isinstance(env, str) else env
     len_seg = env.len_seg

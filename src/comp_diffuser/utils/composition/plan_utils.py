@@ -58,8 +58,6 @@ def split_trajs_list_by_prob(trajs_list, n_probs, cond_type="gl"):
         assert cond_type in ["gl", "ret"]
         if cond_type == "gl":
             assert (tmp_tj_l[-1][0, -1, :] == tmp_tj_l[-1][-1, -1, :]).all()
-
-        ## Oct 24, check tmp_tj_l
         # pdb.set_trace()
         out_list.append(tmp_tj_l)
 

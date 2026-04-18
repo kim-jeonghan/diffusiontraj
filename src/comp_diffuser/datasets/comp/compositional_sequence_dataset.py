@@ -64,7 +64,6 @@ class CompositionalSequenceDataset(torch.utils.data.Dataset):
         for i, episode in enumerate(itr):
             fields.add_path(episode)
         fields.finalize()
-        # pdb.set_trace() ## TODO: From Here, Oct 14, obs is not normalized now
 
         self.normalizer = DatasetNormalizer(
             fields, normalizer, path_lengths=fields["path_lengths"]

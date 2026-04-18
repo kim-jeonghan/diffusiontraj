@@ -54,7 +54,6 @@ def main(args_train, args):
     #                          [5, 8], [5, 8.5]], dtype=np.float32)
     ##---
     pl_seeds = args.pl_seeds
-    ## Oct 30
     from comp_diffuser.datasets.d4rl import Is_Gym_Robot_Env
 
     if len(pl_seeds) == 1:
@@ -125,8 +124,6 @@ if __name__ == "__main__":
 
     args.var_temp = 0.5
     args.cond_w = 2.0
-
-    ## TODO: Jan 24 00:51 AM Check!!!!
     args.inference_schedule = "gsc"
 
     # pdb.set_trace()

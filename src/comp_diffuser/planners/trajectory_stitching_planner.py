@@ -98,7 +98,6 @@ class TrajectoryStitchingMazePlanner:
         if self.diffusion.uses_inverse_dynamics:
             diffusion_name = getattr(self.diffusion, "diffusion_name", "our_stgl_sml")
             if diffusion_name == "dd_maze":
-                ## Jan 18 For the Decision Diffuser Baseline
                 self.policy_config, self.trajectory_blender_config = (
                     extract_planner_runtime_config(args)
                 )
@@ -141,7 +140,6 @@ class TrajectoryStitchingMazePlanner:
         self.load_ev_problems()
 
     def load_ev_problems(self):
-        ## Oct 21: get the file name and load the dict out
         self.problems_h5path = get_trajectory_stitching_eval_problem_path(self.env.name)
         self.problems_dict = load_trajectory_stitching_eval_problems(
             h5path=self.problems_h5path
@@ -308,8 +306,6 @@ class TrajectoryStitchingMazePlanner:
         print_color(
             self.env.name,
         )
-
-        ## Oct 21 New, metrics based on if success
         ep_is_suc = np.array(ep_is_suc)
         ep_srate = ep_is_suc.mean() * 100
         ep_fail_idxs = np.where(
@@ -636,8 +632,6 @@ class TrajectoryStitchingMazePlanner:
         print_color(
             self.env.name,
         )
-
-        ## Oct 21 New, metrics based on if success
         ep_is_suc = np.array(ep_is_suc)
         ep_srate = ep_is_suc.mean() * 100
         ep_fail_idxs = np.where(
@@ -766,7 +760,6 @@ class TrajectoryStitchingMazePlanner:
                     plan_pos = pick_traj[t, :2]
                 else:
                     plan_pos = pick_traj[-1, :2]
-                    ## FIXME: Oct 30: uncomment
                     # assert np.isclose(plan_pos, target, atol=0.09).all()
 
                 ## PD controller: hyperparam ?
@@ -1003,8 +996,6 @@ class TrajectoryStitchingMazePlanner:
         print_color(
             self.env.name,
         )
-
-        ## Oct 21 New, metrics based on if success
         ep_is_suc = np.array(ep_is_suc)
         ep_srate = ep_is_suc.mean() * 100
         ep_fail_idxs = np.where(
@@ -1039,7 +1030,6 @@ class TrajectoryStitchingMazePlanner:
                     "epoch_diffusion",
                     self.epoch,
                 ),
-                ## ---- New Oct 23
                 ("p_h5path", self.problems_h5path),
                 ("var_temp", self.diffusion.var_temp),
                 ("b_size_per_prob", self.b_size_per_prob),
@@ -1086,7 +1076,6 @@ class TrajectoryStitchingMazePlanner:
                 ),
                 ("use_ddim", self.diffusion.use_ddim),
                 ("ddim_eta", self.diffusion.ddim_eta),
-                ## ---- New Oct 23
                 ("p_h5path", self.problems_h5path),
                 ("var_temp", self.diffusion.var_temp),
                 ("b_size_per_prob", self.b_size_per_prob),

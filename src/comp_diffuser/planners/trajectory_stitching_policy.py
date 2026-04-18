@@ -5,9 +5,9 @@ import numpy as np
 import torch
 
 from ..guides.comp.traj_blender import Traj_Blender
-from ..guides.comp.trajectory_batches import InverseDynamicsTrajectories
 from ..models.common.helpers import apply_conditioning
 from ..models.diffusion.trajectory_stitching_diffusion import StitchingDiffusion
+from ..types import InverseDynamicsTrajectories
 from ..utils.arrays import to_np
 from ..utils.composition.plan_utils import split_trajs_list_by_prob
 from ..utils.composition.trajectory_ranking import (

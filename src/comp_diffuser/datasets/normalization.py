@@ -260,7 +260,6 @@ class CDFNormalizer1d:
             self.constant = True
         else:
             self.constant = False
-            ## TODO: Nov 10: 00:41am From Here
             quantiles, cumprob = empirical_cdf(self.X)
             ## at a high level, fn is used to do norm, while inv is used to unnorm
             ## if the data is denser at around x_100, then space between y99 and y_100 is larger,

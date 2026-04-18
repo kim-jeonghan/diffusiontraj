@@ -69,8 +69,6 @@ class TrajectoryStitchingMazePlanner:
 
         assert self.env.reward_type == "sparse"
         self.env.max_episode_steps = self.args.env_n_max_steps
-
-        ## TODO: Oct 21 21:23
         ## loading the dataset is too slow...
         # dfu_exp = utils.load_compositional_diffusion(
         #     args.logbase, args_train.dataset,
@@ -87,7 +85,6 @@ class TrajectoryStitchingMazePlanner:
 
         # pdb.set_trace() ## check args.diffusion_epoch controllable? No, If inside parser
         ## NOTE:
-        ## TODO: Oct 21 22:15 From Here, add non-load normalizer!!!
         self.train_normalizer = load_trajectory_stitching_dataset_normalizer(
             args_train,
         )
@@ -107,7 +104,6 @@ class TrajectoryStitchingMazePlanner:
         if self.diffusion.uses_inverse_dynamics:
             diffusion_name = getattr(self.diffusion, "diffusion_name", "our_stgl_sml")
             if diffusion_name == "dd_maze":
-                ## Jan 18 For the Decision Diffuser Baseline
                 self.policy_config, self.trajectory_blender_config = (
                     extract_planner_runtime_config(args)
                 )
@@ -118,7 +114,7 @@ class TrajectoryStitchingMazePlanner:
                 )
 
             else:
-                # pdb.set_trace() ## TODO: Oct 21 16:31pm, From Here
+                # pdb.set_trace()
                 ## top_n: int, pick_type: str,tj_blder_config,
                 ## Setup the config to init policy
                 self.policy_config, self.trajectory_blender_config = (
@@ -159,7 +155,6 @@ class TrajectoryStitchingMazePlanner:
         self.load_ev_problems()
 
     def load_ev_problems(self):
-        ## Oct 21: get the file name and load the dict out
         self.problems_h5path = get_trajectory_stitching_eval_problem_path(self.env.name)
         self.problems_dict = load_trajectory_stitching_eval_problems(
             h5path=self.problems_h5path
@@ -273,7 +268,6 @@ class TrajectoryStitchingMazePlanner:
             ep_titles_act.append(f"Act: {i_ep}_score{int(score)}")
 
             ep_is_suc.append(is_suc)
-            # pdb.set_trace() ## TODO: From Here Oct 24 16:45
 
             ep_scores.append(score)
             ep_total_rewards.append(total_reward)
@@ -343,8 +337,6 @@ class TrajectoryStitchingMazePlanner:
         print_color(
             self.env.name,
         )
-
-        ## Oct 21 New, metrics based on if success
         ep_is_suc = np.array(ep_is_suc)
         ep_srate = ep_is_suc.mean() * 100
         ep_fail_idxs = np.where(
@@ -500,7 +492,7 @@ class TrajectoryStitchingMazePlanner:
     ### ------------------ Ben --------------------------
     ### -------------------------------------------------
 
-    ### TODO: Oct 30 update the major planning code
+    #
     def ben_plan_once_parallel(self, pl_seed=None, given_probs=None):  ## num_ep
         """
         ** Ben Env based on Gym Robotics **
@@ -619,7 +611,6 @@ class TrajectoryStitchingMazePlanner:
             ep_titles_act.append(f"Act: {i_ep}_score{int(score)}")
 
             ep_is_suc.append(is_suc)
-            # pdb.set_trace() ## TODO: From Here Oct 24 16:45
 
             ep_scores.append(score)
             ep_total_rewards.append(total_reward)
@@ -696,8 +687,6 @@ class TrajectoryStitchingMazePlanner:
         print_color(
             self.env.name,
         )
-
-        ## Oct 21 New, metrics based on if success
         ep_is_suc = np.array(ep_is_suc)
         ep_srate = ep_is_suc.mean() * 100
         ep_fail_idxs = np.where(
@@ -801,8 +790,6 @@ class TrajectoryStitchingMazePlanner:
         assert (start_state == self.ben_env_get_obs()).all()
         assert (target == self.env.goal).all()
         # pdb.set_trace() ## check pick_traj
-
-        ## FIXME: Oct 30 uncomment
         # assert np.isclose(pick_traj[0], start_state[ self.obs_select_dim, ], atol=0.05).all()
         # assert np.isclose(pick_traj[-1], target, atol=0.05).all()
 
@@ -843,7 +830,6 @@ class TrajectoryStitchingMazePlanner:
                     plan_pos = pick_traj[t, :2]
                 else:
                     plan_pos = pick_traj[-1, :2]
-                    ## FIXME: Oct 30: uncomment
                     # assert np.isclose(plan_pos, target, atol=0.09).all()
 
                 ## PD controller: hyperparam ?
@@ -992,8 +978,6 @@ class TrajectoryStitchingMazePlanner:
                 # velocity = obs_cur[2:4]
 
                 ## ----------- A Simple Controller ------------
-
-                ## TODO: Oct 23 19:04, the above seems good, but too slow
                 ## can use actions or define a simple controller based on state predictions
                 if self.act_control == "pd_ori":
                     raise NotImplementedError
@@ -1125,8 +1109,6 @@ class TrajectoryStitchingMazePlanner:
         print_color(
             self.env.name,
         )
-
-        ## Oct 21 New, metrics based on if success
         ep_is_suc = np.array(ep_is_suc)
         ep_srate = ep_is_suc.mean() * 100
         ep_fail_idxs = np.where(
@@ -1166,7 +1148,6 @@ class TrajectoryStitchingMazePlanner:
                     "epoch_diffusion",
                     self.epoch,
                 ),
-                ## ---- New Oct 23
                 ("p_h5path", self.problems_h5path),
                 ("var_temp", self.diffusion.var_temp),
                 ("b_size_per_prob", self.b_size_per_prob),
@@ -1216,7 +1197,6 @@ class TrajectoryStitchingMazePlanner:
                 ),
                 ("use_ddim", self.diffusion.use_ddim),
                 ("ddim_eta", self.diffusion.ddim_eta),
-                ## ---- New Oct 23
                 ("p_h5path", self.problems_h5path),
                 ("var_temp", self.diffusion.var_temp),
                 ("b_size_per_prob", self.b_size_per_prob),

@@ -39,7 +39,6 @@ def main():
     torch.manual_seed(seed_u)
 
     # pdb.set_trace()
-    ## TODO: Oct 21, 18:53, From Here
 
     el_name = rs_cfg["el_name"]
     assert el_name == "maze2d-large-v1", "not implement others yet"

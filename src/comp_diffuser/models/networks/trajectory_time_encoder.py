@@ -134,7 +134,6 @@ class TrajectoryTimeEncoder(nn.Module):
 
         # pdb.set_trace()
         ## for older code, just ignore this assert
-        # assert self.cnn_out_dim == mid_dim, 'added on Dec 22, maynot be compatible to all prev code'
 
         assert (
             self.f_mlp_in_dim < self.final_mlp_dims[0] / 0.95

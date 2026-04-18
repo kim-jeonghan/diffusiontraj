@@ -175,7 +175,6 @@ class MazeTrainer(object):
         print_color(f"[ utils/training ] Saved model to {savepath}", c="y")
 
     def load4resume(self, loadpath):
-        ## Dec 26
         data = torch.load(loadpath)
         self.model.load_state_dict(data["model"])
         self.ema_model.load_state_dict(data["ema"])
