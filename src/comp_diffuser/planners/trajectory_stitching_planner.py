@@ -15,7 +15,6 @@ from ..utils.composition.composition_serialization import (
     load_trajectory_stitching_eval_problems,
 )
 from ..utils.eval_utils import (
-    ben_luo_rowcol_to_xy,
     print_color,
     rename_fn,
     save_img,
@@ -490,9 +489,8 @@ class TrajectoryStitchingMazePlanner:
                 ## (n_probs, 2)
                 gl_pos_acc = self.problems_dict["goal_pos"][i_ep:tmp_last_p_idx]
 
-                ## we need to make the cell-idx level state into mujoco coordinate level first
-                input_st_acc = ben_luo_rowcol_to_xy(self.dset_type, trajs=input_st_acc)
-                gl_pos_acc = ben_luo_rowcol_to_xy(self.dset_type, trajs=gl_pos_acc)
+                # Ben Maze2D eval problems are already stored in MuJoCo xy coordinates.
+                # Re-applying row/col -> xy conversion warps them into the wrong frame.
 
                 g_cond = {
                     "start_goal_pairs": np.array(

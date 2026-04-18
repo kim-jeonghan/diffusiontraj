@@ -6,14 +6,14 @@ import h5py
 import numpy as np
 import torch
 import yaml  # type: ignore[import-untyped]
-from maze2d_eval_problem_utils import (
+from tap import Tap
+
+from ..utils.eval_utils import print_color
+from .maze2d_constants import m2d_get_bottom_top_rows
+from .maze2d_problem_utils import (
     m2d_rand_sample_probs,
     merge_prob_dicts,
 )
-from maze2d_planning_constants import m2d_get_bottom_top_rows
-from tap import Tap
-
-from comp_diffuser.utils.eval_utils import print_color
 
 warnings.simplefilter("always", ResourceWarning)  # Show all resource warnings
 
@@ -27,7 +27,7 @@ def main():
 
     args = ArgsParser().parse_args()
 
-    file_path = "scripts/eval_problems/generate_maze2d_eval_problems.yaml"
+    file_path = "src/comp_diffuser/planning_eval/maze2d_problem_sets.yaml"
     # Open the YAML file and load its contents
     with open(file_path, "r") as file:
         config = yaml.safe_load(file)
@@ -74,9 +74,11 @@ def main():
 
     ## check consistency ??
 
-    h5_root = "/coc/flash7/yluo470/robot2024/hi_src/comp_diffuser/data/m2d/ev_probs"
+    h5_root = "data/m2d/ev_probs"
     h5_save_path = f"{h5_root}/{args.sub_conf}.hdf5"
     # pdb.set_trace()
+    # num_probs = all_prob_dict["start_state"].shape[0]
+
     ## ----------------------------------
     ## Finished all, save to hdf5
     with h5py.File(h5_save_path, "w") as file:
