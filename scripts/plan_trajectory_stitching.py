@@ -117,7 +117,7 @@ if __name__ == "__main__":
 
     args.b_size_per_prob = 20
     args.b_size_per_prob = 40
-    args.top_k = 5
+    args.top_k = 1
     args.trajectory_selection = "first"
     args.blend_type = "exp"
     args.blend_exponential_beta = 2

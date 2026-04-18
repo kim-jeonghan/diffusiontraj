@@ -14,11 +14,12 @@ from ...utils.composition.composition_serialization import (
     load_trajectory_stitching_eval_problems,
 )
 from ...utils.eval_utils import (
+    ben_luo_rowcol_to_xy,
+    ben_xy_to_luo_rowcol,
     print_color,
     rename_fn,
     save_img,
     save_json,
-    select_maze_render_coords,
 )
 from ...utils.planning_config import extract_planner_runtime_config
 from ...utils.serialization import mkdir
@@ -154,6 +155,18 @@ class TrajectoryStitchingMazePlanner:
         self.savepath_root = self.savepath
         self.load_ev_problems()
 
+    def _problem_xy_to_policy_xy(self, xy_positions):
+        cell_positions = np.stack(
+            [self.env.maze.cell_xy_to_rowcol(xy) for xy in xy_positions], axis=0
+        )
+        return ben_luo_rowcol_to_xy(self.dset_type, trajs=cell_positions)
+
+    def _problem_xy_to_env_cells(self, start_xy, goal_xy):
+        return {
+            "reset_cell": self.env.maze.cell_xy_to_rowcol(start_xy),
+            "goal_cell": self.env.maze.cell_xy_to_rowcol(goal_xy),
+        }
+
     def load_ev_problems(self):
         self.problems_h5path = get_trajectory_stitching_eval_problem_path(self.env.name)
         self.problems_dict = load_trajectory_stitching_eval_problems(
@@ -203,6 +216,8 @@ class TrajectoryStitchingMazePlanner:
                 ]
                 ## (n_probs, 2)
                 gl_pos_acc = self.problems_dict["goal_pos"][i_ep:tmp_last_p_idx]
+                input_st_acc = self._problem_xy_to_policy_xy(input_st_acc)
+                gl_pos_acc = self._problem_xy_to_policy_xy(gl_pos_acc)
 
                 g_cond = {
                     "start_goal_pairs": np.array(
@@ -420,6 +435,7 @@ class TrajectoryStitchingMazePlanner:
         ]
 
         n_max_steps = self.env.max_episode_steps
+        plan_offset = 0
 
         for t in range(n_max_steps):
             ## maze2d: np (4,)
@@ -437,16 +453,18 @@ class TrajectoryStitchingMazePlanner:
             elif self.act_control == "dfu_force":  ## from diffusion forcing
                 ## pick_traj ## only have obs actually
                 ### ----- get the desired vel -----
-                if t == 0:
-                    plan_vel = pick_traj[t, :2] - cur_state[:2]
-                elif t > 0 and t < len(pick_traj):
-                    plan_vel = pick_traj[t, :2] - pick_traj[t - 1, :2]
+                if plan_offset == 0:
+                    plan_vel = pick_traj[plan_offset, :2] - cur_state[:2]
+                elif plan_offset > 0 and plan_offset < len(pick_traj):
+                    plan_vel = (
+                        pick_traj[plan_offset, :2] - pick_traj[plan_offset - 1, :2]
+                    )
                 else:
                     ## large than our traj
                     plan_vel = np.zeros_like(cur_state[2:])
                 ### ----- get the desired position -----
-                if t < len(pick_traj):
-                    plan_pos = pick_traj[t, :2]
+                if plan_offset < len(pick_traj):
+                    plan_pos = pick_traj[plan_offset, :2]
                 else:
                     plan_pos = pick_traj[-1, :2]
                     assert np.isclose(plan_pos, target, atol=0.09).all()
@@ -481,6 +499,7 @@ class TrajectoryStitchingMazePlanner:
 
             ## update rollout observations
             rollout.append(obs_next.copy())
+            plan_offset += 1
 
         ## -----------------------------------------------------------
         ## ------------ Finished one env interact episode ------------
@@ -540,6 +559,8 @@ class TrajectoryStitchingMazePlanner:
                 ]
                 ## (n_probs, 2)
                 gl_pos_acc = self.problems_dict["goal_pos"][i_ep:tmp_last_p_idx]
+                input_st_acc = self._problem_xy_to_policy_xy(input_st_acc)
+                gl_pos_acc = self._problem_xy_to_policy_xy(gl_pos_acc)
 
                 g_cond = {
                     "start_goal_pairs": np.array(
@@ -570,11 +591,8 @@ class TrajectoryStitchingMazePlanner:
             assert (st_state[2:] == np.array([0.0, 0.0])).all(), "zero start speed"
             assert gl_pos.shape == (2,), "just for maze2d env, not sure for antmaze"
 
-            start_goal = {
-                "reset_cell": st_state[:2],
-                "goal_cell": gl_pos,
-            }
-            obs_gyro, _ = self.env.reset_given(options=start_goal)
+            start_goal = self._problem_xy_to_env_cells(st_state[:2], gl_pos)
+            obs_gyro, _ = self.env.reset(options=start_goal)
             st_state_mj = obs_gyro["observation"]
             assert (st_state_mj[2:] == 0).all()
             target_mj = self.env.goal  ## should be set, but normalized in mujoco xy
@@ -592,9 +610,9 @@ class TrajectoryStitchingMazePlanner:
                 pick_traj=pick_tj_ep, start_state=st_state_mj, target=target_mj
             )
 
-            pick_tj_ep = select_maze_render_coords(self.dset_type, pick_tj_ep)
+            pick_tj_ep = ben_xy_to_luo_rowcol(self.dset_type, pick_tj_ep)
             rollout = np.array(rollout)
-            rollout[:, :2] = select_maze_render_coords(self.dset_type, rollout[:, :2])
+            rollout[:, :2] = ben_xy_to_luo_rowcol(self.dset_type, rollout[:, :2])
 
             ## ---------------------------------------------------
             ## ------------ Finished one eval episode ------------
@@ -795,12 +813,27 @@ class TrajectoryStitchingMazePlanner:
         ]
 
         n_max_steps = self.env.max_episode_steps
+        replan_freq = 25
+        plan_offset = 0
 
         for t in range(n_max_steps):
             ## maze2d: np (4,)
             cur_state = self.ben_env_get_obs().copy()
 
             assert len(cur_state) == 4, "only for maze2D, for now."
+
+            if t == 0 or t % replan_freq == 0:
+                g_cond = {
+                    "start_goal_pairs": np.array(
+                        [[cur_state[list(self.obs_select_dim)]], [target]],
+                        dtype=np.float32,
+                    )
+                }
+                pick_traj = self.policy.generate_conditioned_trajectory(
+                    planner_inputs=g_cond,
+                    batch_size=self.b_size_per_prob,
+                ).pick_traj
+                plan_offset = 0
 
             ## ----------- A Simple Controller ------------
 
@@ -820,8 +853,9 @@ class TrajectoryStitchingMazePlanner:
                     ## large than our traj
                     plan_vel = np.zeros_like(cur_state[2:])
                 ### ----- get the desired position -----
+                lookahead_idx = min(t + 4, len(pick_traj) - 1)
                 if t < len(pick_traj):
-                    plan_pos = pick_traj[t, :2]
+                    plan_pos = pick_traj[lookahead_idx, :2]
                 else:
                     plan_pos = pick_traj[-1, :2]
                     # assert np.isclose(plan_pos, target, atol=0.09).all()
@@ -864,6 +898,7 @@ class TrajectoryStitchingMazePlanner:
 
             ## update rollout observations
             rollout.append(obs_next.copy())
+            plan_offset += 1
 
         ## -----------------------------------------------------------
         ## ------------ Finished one env interact episode ------------

@@ -12,12 +12,9 @@ def normalize_trajectory_stitching_policy_config(policy_config):
         "inference_schedule",
         default="interleaved",
     )
-    inference_schedule_aliases = {
+    inference_schedule = {
         "gsc": "global_sync",
-    }
-    inference_schedule = inference_schedule_aliases.get(
-        inference_schedule, inference_schedule
-    )
+    }.get(inference_schedule, inference_schedule)
     return {
         "num_segments": _get_config_value(policy_config, "num_segments", required=True),
         "top_k": _get_config_value(policy_config, "top_k", required=True),

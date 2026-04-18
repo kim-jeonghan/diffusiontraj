@@ -111,7 +111,7 @@ def get_trajectory_stitching_eval_problem_path(env_name):
     elif env_name == "PointMaze_Medium-v3":
         hdf5_path = "data/m2d/ev_probs/ben/ben_maze2d_Me_ev_prob_numEp10_eSdSt0.hdf5"
     elif env_name == "PointMaze_UMaze-v3":
-        hdf5_path = "data/m2d/ev_probs/ben/ben_maze2d_Umz_ev_prob_numEp10_eSdSt0.hdf5"
+        hdf5_path = "data/m2d/ev_probs/ben/ben_maze2d_Umz_ev_prob_numEp10_eSdSt0_currentenv.hdf5"
     else:
         raise NotImplementedError
 
