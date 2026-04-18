@@ -19,7 +19,7 @@ WANDB_MODE=disabled uv run python scripts/train_maze_baseline.py \
   --device cpu
 
 WANDB_MODE=disabled uv run python scripts/train_trajectory_stitching.py \
-  --config configs/maze2d/maze2d_umaze_baseline_config.py \
+  --config configs/maze2d/maze2d_umaze_trajectory_stitching_config.py \
   --device cpu
 ```
 
@@ -30,23 +30,14 @@ uv run python scripts/plan_maze_baseline.py \
   --device cpu --plan_n_ep 1
 
 uv run python scripts/plan_trajectory_stitching.py \
-  --config configs/maze2d/maze2d_umaze_baseline_config.py \
+  --config configs/maze2d/maze2d_umaze_trajectory_stitching_config.py \
   --device cpu --plan_n_ep 1
 ```
 `--plan_n_ep -100` means "all episodes". Planning scripts auto-resolve `diffusion_epoch=latest` from the matching training run directory.
 
-**Smoke test** (verifies forward pass only):
-```bash
-DIFFUSER_DEVICE=cpu WANDB_MODE=disabled \
-uv run python scripts/train_maze_baseline.py \
-  --config configs/maze2d/maze2d_umaze_baseline_smoke_config.py \
-  --device cpu --n_train_steps 0
-```
-Expected final output: `Testing forward... ✓`
-
 **Pytest:**
 ```bash
-uv run pytest -q tests/test_maze2d_smoke.py tests/test_planning_config_schema.py
+uv run pytest -q tests/test_planning_config_schema.py
 uv run pytest tests/   # all tests
 ```
 
@@ -83,7 +74,7 @@ Load checkpoint → Policy (MazePolicy or TrajectoryStitchingPolicy)
 ### Module Responsibilities
 
 - **`models/diffusion/`** — `MazeGaussianDiffusion` wraps `MazeTemporalUNet`; implements forward (noise) and reverse (denoise) diffusion with cosine beta schedule and inverse dynamics for action prediction.
-- **`models/trajectory_stitching/`** — Extends baseline with overlap region blending; `StitchingDiffusion` and its trainer handle segment composition.
+- **`models/stitching/`** and **`models/diffusion/trajectory_stitching_diffusion.py`** — trajectory stitching planner/policy and stitching diffusion implementation.
 - **`trainers/maze_trainer.py`** — `MazeTrainer`: training loop, EMA updates, checkpoint saving, sample rendering.
 - **`planners/`** — `MazePolicy` and `Maze2DEnvPlanner` handle inference-time rollouts; `trajectory_blender.py` computes blended segments for stitching.
 - **`datasets/`** — D4RL/HDF5 loading, normalization, sequence dataset construction. Compositional variants under `datasets/comp/`.
@@ -100,7 +91,7 @@ Each experiment is a single Python file in `configs/maze2d/` that exports a `bas
 - Add a new config file rather than branching one file with conditionals.
 - `logbase = artifacts/runs`, `prefix = diffusion/` for training, `plans/release` for planning.
 
-Config variants: `*_smoke_config.py` (tiny/fast), `*_umaze_*`, `*_medium_*`, `*_large_*`.
+Config variants: `*_umaze_*`, `*_medium_*`, `*_large_*`.
 
 ### Artifacts Layout
 
@@ -116,3 +107,13 @@ artifacts/runs/<dataset>/<exp_name>/
 ```
 
 Local data lives in `data/m2d/` (bundled Maze2D HDF5 for tests) and `data/eval_problems/` (planning start/goal sets).
+
+## Logic Refactor Rules
+
+When refactoring planning, training, or config logic:
+
+- check the original upstream behavior before changing lane boundaries or artifact contracts
+- keep baseline and stitching paths separate end to end: script, config, diffusion model, trainer, planner, and policy
+- remove fallback hacks once the correct path is known; prefer explicit failure when inputs or artifacts do not match
+- validate with a real command, not just imports or unit-level reasoning
+- treat `state_0.pt` as an initialization artifact, not a meaningful planning checkpoint

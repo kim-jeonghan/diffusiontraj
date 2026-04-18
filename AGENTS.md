@@ -10,7 +10,7 @@ This repository is a `uv`-managed Python project focused on Maze2D diffusion tra
 - `src/comp_diffuser/planners/`: planning and policy logic
 - `configs/maze2d/`: experiment configs
 - `scripts/`: runnable entrypoints such as `train_maze_baseline.py`
-- `tests/`: smoke and regression tests
+- `tests/`: regression tests
 - `data/m2d/`: local Maze2D HDF5 datasets
 - `data/eval_problems/`: saved planning problem sets
 - `artifacts/`: generated checkpoints, config snapshots, and renders
@@ -19,12 +19,9 @@ This repository is a `uv`-managed Python project focused on Maze2D diffusion tra
 
 - `uv sync --extra dev`: install runtime and dev dependencies
 - `uv run pytest -q`: run the full test suite
-- `uv run pytest -q tests/test_maze2d_smoke.py`: verify local dataset loading
 - `uvx ruff check .`: run lint checks
 - `uvx ruff check . --fix`: apply safe lint fixes
 - `uv run python scripts/train_maze_baseline.py --config configs/maze2d/maze2d_umaze_baseline_config.py --device cpu`: run baseline training
-
-Use `WANDB_MODE=disabled` for local smoke runs unless you want online logging.
 
 ## Coding Style & Naming Conventions
 
@@ -32,7 +29,7 @@ Target Python 3.11. Use 4-space indentation and keep lines within Ruff’s confi
 
 ## Testing Guidelines
 
-Tests use `pytest` and live under `tests/` with names like `test_*.py`. Add focused regression tests for any change that affects config loading, dataset parsing, model wiring, or planning behavior. For data-path changes, run at least `tests/test_maze2d_smoke.py`.
+Tests use `pytest` and live under `tests/` with names like `test_*.py`. Add focused regression tests for any change that affects config loading, dataset parsing, model wiring, or planning behavior.
 
 ## Commit & Pull Request Guidelines
 
@@ -48,3 +45,12 @@ For pull requests, include:
 ## Configuration Tips
 
 Keep `dataset`, `dset_h5path`, horizon values, and `n_diffusion_steps` aligned across the `diffusion` and `plan` blocks in each config. Use relative paths such as `data/m2d/...` and `artifacts/...` to keep runs portable.
+
+## Logic Refactors
+
+When changing planning, training, or config logic:
+
+- check the original repository behavior before changing contracts or control flow
+- keep baseline and trajectory stitching as separate lanes; do not reuse one lane’s config file in the other
+- prefer explicit early failure over silent fallback when model, trainer, planner, or artifact paths do not match
+- verify both code paths and artifacts: config import, checkpoint path, planner inputs, and at least one real command relevant to the changed lane

@@ -14,7 +14,6 @@ from ...utils.composition.composition_serialization import (
     load_trajectory_stitching_eval_problems,
 )
 from ...utils.eval_utils import (
-    ben_luo_rowcol_to_xy,
     print_color,
     rename_fn,
     save_img,
@@ -550,12 +549,6 @@ class TrajectoryStitchingMazePlanner:
                 ## (n_probs, 2)
                 gl_pos_acc = self.problems_dict["goal_pos"][i_ep:tmp_last_p_idx]
 
-                ## we need to make the cell-idx level state into mujoco coordinate level first
-                input_st_acc = ben_luo_rowcol_to_xy(self.dset_type, trajs=input_st_acc)
-                gl_pos_acc = ben_luo_rowcol_to_xy(self.dset_type, trajs=gl_pos_acc)
-                # pdb.set_trace()
-                ## utils.ben_xy_to_luo_rowcol(self.dset_type, trajs=gl_pos_acc) ## just for check
-
                 g_cond = {
                     "start_goal_pairs": np.array(
                         [input_st_acc, gl_pos_acc], dtype=np.float32
@@ -579,30 +572,28 @@ class TrajectoryStitchingMazePlanner:
                 # st_state = given_starts[i_ep, :2]
             else:
                 ## 2d, (n_probs, 4) --> 1d, (4,) qpos, qvel
-                ## in cell-idx coordinate
                 st_state = self.problems_dict["start_state"][i_ep,]
                 gl_pos = self.problems_dict["goal_pos"][i_ep]
 
-            # self.env.set_state(qpos=st_state[:2], qvel=st_state[2:])
             assert (st_state[2:] == np.array([0.0, 0.0])).all(), "zero start speed"
             assert gl_pos.shape == (2,), "just for maze2d env, not sure for antmaze"
 
-            # pdb.set_trace() ## check current state
-
-            ## <gymnasium_robotics.envs.maze.point_maze.PointMazeEnv>
-            # self.env.set_target(target_location=gl_pos) ## used to change the target
-            ssg = {
-                "reset_cell": st_state[:2],
-                "goal_cell": gl_pos,
-            }
-            obs_gyro, _ = self.env.reset_given(options=ssg)
+            self.env.reset()
+            self.env.point_env.set_state(
+                qpos=np.asarray(st_state[:2], dtype=np.float64),
+                qvel=np.asarray(st_state[2:], dtype=np.float64),
+            )
+            self.env.goal = np.asarray(gl_pos, dtype=np.float64)
+            self.env.update_target_site_pos()
+            point_obs = np.concatenate(
+                [self.env.point_env.data.qpos, self.env.point_env.data.qvel]
+            )
+            obs_gyro = self.env._get_obs(point_obs)
             st_state_mj = obs_gyro["observation"]
             assert (st_state_mj[2:] == 0).all()
             target_mj = self.env.goal  ## should be set, but normalized in mujoco xy
 
-            # pdb.set_trace() ## check current state
-
-            ep_targets.append(gl_pos)  ## just for vis, so input cell-idx
+            ep_targets.append(gl_pos)
 
             assert len(target_mj) == len(self.obs_select_dim)
 
@@ -615,11 +606,9 @@ class TrajectoryStitchingMazePlanner:
                 pick_traj=pick_tj_ep, start_state=st_state_mj, target=target_mj
             )
 
-            ## for vis, we need to transform to cell-idx coordinate
             pick_tj_ep = select_maze_render_coords(self.dset_type, pick_tj_ep)
             rollout = np.array(rollout)
             rollout[:, :2] = select_maze_render_coords(self.dset_type, rollout[:, :2])
-            # pdb.set_trace() ## Oct 31
 
             ## ---------------------------------------------------
             ## ------------ Finished one eval episode ------------

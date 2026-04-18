@@ -85,6 +85,7 @@ local_settings.py
 __pypackages__/
 
 # Generated project artifacts
+artifacts/
 artifacts/runs/
 artifacts/checkpoints/
 artifacts/samples/
@@ -100,3 +101,4 @@ my_class_*.pkl
 data/
 luotest/
 .omx
+artifcts/

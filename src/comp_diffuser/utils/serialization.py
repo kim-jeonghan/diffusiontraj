@@ -34,6 +34,14 @@ def get_latest_epoch(loadpath):
     return latest_epoch
 
 
+def list_saved_epochs(loadpath):
+    states = glob.glob1(os.path.join(*loadpath), "state_*")
+    epochs = []
+    for state in states:
+        epochs.append(int(state.replace("state_", "").replace(".pt", "")))
+    return sorted(epochs)
+
+
 def load_config(*loadpath):
     loadpath = os.path.join(*loadpath)
     config = pickle.load(open(loadpath, "rb"))

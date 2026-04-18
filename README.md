@@ -1,6 +1,6 @@
 # Comp Diffuser
 
-Maze2D-focused diffusion planning code, packaged as a `uv` project.
+Maze2D-focused diffusion training and planning code, packaged as a `uv` project.
 
 ## Setup
 
@@ -14,13 +14,13 @@ uv sync --extra dev
 
 - `src/comp_diffuser/`: library code
 - `scripts/`: train and plan entrypoints
-- `configs/maze2d/`: Maze2D experiment configs
-- `tests/`: smoke and regression tests
+- `configs/maze2d/`: Maze2D configs
+- `tests/`: regression tests
 - `data/m2d/`: local Maze2D HDF5 datasets
 - `data/eval_problems/`: planning problem sets
-- `artifacts/`: checkpoints, config snapshots, renders, and plan outputs
+- `artifacts/`: checkpoints, renders, and planning outputs
 
-## Train
+## Training
 
 Baseline training:
 
@@ -28,65 +28,80 @@ Baseline training:
 WANDB_MODE=disabled \
 uv run python scripts/train_maze_baseline.py \
   --config configs/maze2d/maze2d_umaze_baseline_config.py \
-  --device cpu
+  --device cuda
 ```
 
-Smoke run:
+Trajectory stitching training:
 
 ```bash
 WANDB_MODE=disabled \
-uv run python scripts/train_maze_baseline.py \
-  --config configs/maze2d/maze2d_umaze_baseline_smoke_config.py \
-  --device cpu \
-  --n_train_steps 0
+uv run python scripts/train_trajectory_stitching.py \
+  --config configs/maze2d/maze2d_umaze_trajectory_stitching_config.py \
+  --device cuda
 ```
 
-Expected smoke output ends with `Testing forward... ✓`.
+## Planning
 
-## Plan
+Planning requires a trained checkpoint, not just `state_0.pt`.
 
-Planning expects an existing baseline run:
+Baseline planning:
 
 ```bash
 uv run python scripts/plan_maze_baseline.py \
   --config configs/maze2d/maze2d_umaze_baseline_config.py \
-  --device cpu \
+  --device cuda \
   --plan_n_ep 1
 ```
 
-`--plan_n_ep 1` is a minimal sanity run. Planning resolves `diffusion_epoch=latest` from the matching training directory under `artifacts/`.
+Trajectory stitching planning:
+
+```bash
+uv run python scripts/plan_trajectory_stitching.py \
+  --config configs/maze2d/maze2d_umaze_trajectory_stitching_config.py \
+  --device cuda \
+  --plan_n_ep 1
+```
+
+If planning exits with “No trained checkpoint found”, run training until a non-zero checkpoint such as `state_4000.pt` exists.
 
 ## Test and Lint
 
 ```bash
 uv run pytest -q
-uv run pytest -q tests/test_maze2d_smoke.py tests/test_planning_config_schema.py
+uv run pytest -q tests/test_planning_config_schema.py
 uvx ruff check .
 uvx ruff check . --fix
+pre-commit run --all-files
 ```
 
 ## Config Notes
 
-Each file in `configs/maze2d/` exports a `base` dictionary with `dataset`, `dset_h5path`, `diffusion`, and `plan` blocks. Keep `dataset`, `dset_h5path`, horizon values, and `n_diffusion_steps` aligned across training and planning.
+Each file in `configs/maze2d/` exports a `base` dictionary with `dataset`, `dset_h5path`, `diffusion`, and `plan` blocks.
 
-Current configs:
+Available configs:
 
-- `maze2d_umaze_baseline_smoke_config.py`
 - `maze2d_umaze_baseline_config.py`
 - `maze2d_medium_baseline_config.py`
 - `maze2d_large_baseline_config.py`
+- `maze2d_umaze_trajectory_stitching_config.py`
+- `maze2d_medium_trajectory_stitching_config.py`
+- `maze2d_large_trajectory_stitching_config.py`
+
+Do not mix baseline configs with stitching scripts, or stitching configs with baseline scripts.
 
 ## Outputs
 
-Training and planning write to `artifacts/<dataset>/<exp_name>/...`.
+Training and planning write under `artifacts/<dataset>/<exp_name>/...`.
 
-Common generated files:
+Typical training files:
 
-- `args.json`: parsed runtime arguments
-- `*_config.pkl`: serialized constructor configs
-- `model_config.txt`: readable model summary
-- checkpoints, sampled renders, and rollout summaries
+- `args.json`
+- `dataset_config.pkl`
+- `render_config.pkl`
+- `model_config.pkl`
+- `diffusion_model.pkl`
+- `trainer_config.pkl`
+- `state_*.pt`
+- sampled `.png` renders
 
-## Current Limitation
-
-Baseline training and planning are the validated paths. Trajectory stitching code is still being reorganized and should not be mixed with baseline configs until a stitching-specific config and trainer/model pairing are restored.
+Planning outputs include `00_rollout.json`, predicted trajectory renders, and rollout renders.

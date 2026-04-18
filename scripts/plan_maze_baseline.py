@@ -9,7 +9,7 @@ from comp_diffuser.models.stitching.trajectory_stitching_planner import (
 )
 from comp_diffuser.utils.composition.trajectory_ranking import parse_seeds_str
 from comp_diffuser.utils.eval_utils import print_color
-from comp_diffuser.utils.serialization import get_latest_epoch
+from comp_diffuser.utils.serialization import get_latest_epoch, list_saved_epochs
 from comp_diffuser.utils.setup import ArgsParser as BaseArgsParser
 
 torch.backends.cudnn.benchmark = True
@@ -131,6 +131,14 @@ if __name__ == "__main__":
     args.cond_w = 2.0
 
     latest_e = get_latest_epoch(loadpath)
+    available_epochs = list_saved_epochs(loadpath)
+    if latest_e <= 0:
+        raise RuntimeError(
+            "No trained baseline checkpoint found. "
+            f"Available epochs at {osp.join(*loadpath)}: {available_epochs}. "
+            "Run baseline training until it saves a non-zero checkpoint, "
+            "or point planning at the correct trained artifact directory."
+        )
     # n_e = round(latest_e // 1e5) + 1 # all
     # start_e = 5e5; # 2e5 end_e =
     # depoch_list = np.arange(start_e, int(n_e * 1e5), int(1e5), dtype=np.int32).tolist()

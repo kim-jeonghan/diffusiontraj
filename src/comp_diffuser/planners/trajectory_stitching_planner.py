@@ -518,24 +518,28 @@ class TrajectoryStitchingMazePlanner:
                 raise NotImplementedError
             else:
                 ## 2d, (n_probs, 4) --> 1d, (4,) qpos, qvel
-                ## in cell-idx coordinate
                 st_state = self.problems_dict["start_state"][i_ep,]
                 gl_pos = self.problems_dict["goal_pos"][i_ep]
 
             assert (st_state[2:] == np.array([0.0, 0.0])).all(), "zero start speed"
             assert gl_pos.shape == (2,), "just for maze2d env, not sure for antmaze"
 
-            ## <gymnasium_robotics.envs.maze.point_maze.PointMazeEnv>
-            ssg = {
-                "reset_cell": st_state[:2],
-                "goal_cell": gl_pos,
-            }
-            obs_gyro, _ = self.env.reset_given(options=ssg)
+            self.env.reset()
+            self.env.point_env.set_state(
+                qpos=np.asarray(st_state[:2], dtype=np.float64),
+                qvel=np.asarray(st_state[2:], dtype=np.float64),
+            )
+            self.env.goal = np.asarray(gl_pos, dtype=np.float64)
+            self.env.update_target_site_pos()
+            point_obs = np.concatenate(
+                [self.env.point_env.data.qpos, self.env.point_env.data.qvel]
+            )
+            obs_gyro = self.env._get_obs(point_obs)
             st_state_mj = obs_gyro["observation"]
             assert (st_state_mj[2:] == 0).all()
             target_mj = self.env.goal  ## should be set, but normalized in mujoco xy
 
-            ep_targets.append(gl_pos)  ## just for vis, so input cell-idx
+            ep_targets.append(gl_pos)
 
             assert len(target_mj) == len(self.obs_select_dim)
 

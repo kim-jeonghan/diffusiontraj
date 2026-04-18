@@ -71,7 +71,6 @@ class MazePolicy:
         sample = self.diffusion_model.conditional_sample(
             diffusion_inputs,
             horizon=self.plan_horizon,
-            verbose=False,
             return_diffusion=self.return_diffusion,
         )
         if self.return_diffusion:
