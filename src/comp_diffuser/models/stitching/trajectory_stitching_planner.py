@@ -570,17 +570,11 @@ class TrajectoryStitchingMazePlanner:
             assert (st_state[2:] == np.array([0.0, 0.0])).all(), "zero start speed"
             assert gl_pos.shape == (2,), "just for maze2d env, not sure for antmaze"
 
-            self.env.reset()
-            self.env.point_env.set_state(
-                qpos=np.asarray(st_state[:2], dtype=np.float64),
-                qvel=np.asarray(st_state[2:], dtype=np.float64),
-            )
-            self.env.goal = np.asarray(gl_pos, dtype=np.float64)
-            self.env.update_target_site_pos()
-            point_obs = np.concatenate(
-                [self.env.point_env.data.qpos, self.env.point_env.data.qvel]
-            )
-            obs_gyro = self.env._get_obs(point_obs)
+            start_goal = {
+                "reset_cell": st_state[:2],
+                "goal_cell": gl_pos,
+            }
+            obs_gyro, _ = self.env.reset_given(options=start_goal)
             st_state_mj = obs_gyro["observation"]
             assert (st_state_mj[2:] == 0).all()
             target_mj = self.env.goal  ## should be set, but normalized in mujoco xy

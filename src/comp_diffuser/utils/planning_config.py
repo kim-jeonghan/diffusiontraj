@@ -7,17 +7,24 @@ def _get_config_value(config, key, default=None, required=False):
 
 
 def normalize_trajectory_stitching_policy_config(policy_config):
+    inference_schedule = _get_config_value(
+        policy_config,
+        "inference_schedule",
+        default="interleaved",
+    )
+    inference_schedule_aliases = {
+        "gsc": "global_sync",
+    }
+    inference_schedule = inference_schedule_aliases.get(
+        inference_schedule, inference_schedule
+    )
     return {
         "num_segments": _get_config_value(policy_config, "num_segments", required=True),
         "top_k": _get_config_value(policy_config, "top_k", required=True),
         "trajectory_selection": _get_config_value(
             policy_config, "trajectory_selection", required=True
         ),
-        "inference_schedule": _get_config_value(
-            policy_config,
-            "inference_schedule",
-            default="interleaved",
-        ),
+        "inference_schedule": inference_schedule,
     }
 
 
