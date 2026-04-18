@@ -36,7 +36,7 @@ time_dim = 64
 
 base = {
     "dataset": "maze2d-umaze-v1",
-    "dset_h5path": "data/m2d/maze2d-umaze-sparse-v1-smoke.hdf5",  #####
+    "dset_h5path": "data/m2d/maze2d-umaze-sparse-v1-luotest.hdf5",  #####
     "diffusion": {
         "config_fn": "",
         "sm_horizon": sm_horizon,
@@ -59,7 +59,6 @@ base = {
         ## TODO:
         ## dd dfu
         "diffusion_model": "models.diffusion.maze_diffusion.MazeGaussianDiffusion",
-        # 'diffusion_model': 'models.GaussianDiffusion',
         "n_diffusion_steps": 512,
         "action_weight": 1,
         "loss_weights": None,
@@ -107,8 +106,8 @@ base = {
         "learning_rate": 2e-4,
         "gradient_accumulate_every": 1,
         "ema_decay": 0.995,
-        "save_freq": 4000,
-        "sample_freq": 4000,
+        "save_freq": 2000,
+        "sample_freq": 2000,
         "n_saves": 5,
         "n_reference": 60,
         "n_samples": 10,

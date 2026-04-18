@@ -3,8 +3,6 @@
 source ~/.bashrc
 source activate hi_diffuser
 
-sub_conf='maze2d_lg_ev_prob_smoke'
-sub_conf='maze2d_lg_ev_prob_smoke_2'
 sub_conf='maze2d_lg_ev_prob_bt2way_nppp3'
 sub_conf='maze2d_lg_ev_prob_bt2way_nppp3_rprange02'
 

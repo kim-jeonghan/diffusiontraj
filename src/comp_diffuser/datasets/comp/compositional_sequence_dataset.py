@@ -80,7 +80,7 @@ class CompositionalSequenceDataset(torch.utils.data.Dataset):
         norm_const_dict = dataset_config.get("norm_const_dict", None)
         # pdb.set_trace()
 
-        if norm_const_dict and "smoke" not in str(dset_h5path):
+        if norm_const_dict:
             for k_name in ["actions", "observations"]:
                 print_color(f"{k_name=}")
                 print(self.normalizer.normalizers[k_name].mins)

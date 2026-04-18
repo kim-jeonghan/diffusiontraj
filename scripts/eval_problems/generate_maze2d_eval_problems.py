@@ -87,9 +87,7 @@ def main():
         file.attrs["env_seed"] = seed_u
         file.attrs["env_name"] = el_name
 
-    ## lock file
-    if "smoke" not in args.sub_conf:
-        os.chmod(h5_save_path, 0o444)
+    os.chmod(h5_save_path, 0o444)
     print_color(f"[save to] {h5_save_path=}")
 
 

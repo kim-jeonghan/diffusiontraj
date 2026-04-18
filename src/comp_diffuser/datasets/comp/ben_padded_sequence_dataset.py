@@ -85,7 +85,7 @@ class BenPaddedSequenceDataset(torch.utils.data.Dataset):
         # pdb.set_trace()
         self.dset_type = dataset_config.get("dset_type", "ours")
 
-        if norm_const_dict and "smoke" not in str(dset_h5path):
+        if norm_const_dict:
             for k_name in ["actions", "observations"]:
                 print_color(f"{k_name=}")
                 print(self.normalizer.normalizers[k_name].mins)

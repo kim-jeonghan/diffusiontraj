@@ -42,6 +42,19 @@ def list_saved_epochs(loadpath):
     return sorted(epochs)
 
 
+def get_checkpoint_step(loadpath, epoch):
+    checkpoint_path = os.path.join(*loadpath, f"state_{epoch}.pt")
+    data = torch.load(checkpoint_path, map_location="cpu")
+    return int(data["step"])
+
+
+def has_trained_checkpoint(loadpath):
+    for epoch in reversed(list_saved_epochs(loadpath)):
+        if get_checkpoint_step(loadpath, epoch) > 0:
+            return True
+    return False
+
+
 def load_config(*loadpath):
     loadpath = os.path.join(*loadpath)
     config = pickle.load(open(loadpath, "rb"))

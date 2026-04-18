@@ -118,7 +118,6 @@ class ArgsParser(Tap):
         else:
             dataset = args.dataset.replace("-", "_")
 
-        ## notice: Used for loading a small smoke dataset for code testing, July 19
         if "dset_h5path" in getattr(module, "base").keys():
             args.dset_h5path = getattr(module, "base")["dset_h5path"]
         else:

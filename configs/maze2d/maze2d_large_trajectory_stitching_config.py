@@ -44,7 +44,7 @@ ovlp_model_config = dict(
 
 base = {
     "dataset": "maze2d-large-v1",
-    "dset_h5path": "data/m2d/maze2d-large-sparse-v1-smoke.hdf5",
+    "dset_h5path": "data/m2d/maze2d-large-sparse-v1-luotest.hdf5",
     "diffusion": {
         "config_fn": "",
         "sm_horizon": sm_horizon,
