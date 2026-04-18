@@ -9,7 +9,6 @@ from comp_diffuser.utils.setup import watch
 config_fn = osp.splitext(osp.basename(__file__))[0]
 
 diffusion_args_to_watch = [
-    ("prefix", ""),
     ("config_fn", config_fn),
     ("horizon", "H"),
     ("n_diffusion_steps", "T"),
@@ -17,7 +16,6 @@ diffusion_args_to_watch = [
 
 
 plan_args_to_watch = [
-    ("prefix", ""),
     ("config_fn", config_fn),
     ##
     ("horizon", "H"),
@@ -30,15 +28,17 @@ plan_args_to_watch = [
     ("conditional", "cond"),
 ]
 
-sm_horizon = 192
-
+sm_horizon = 40
+# len_ovlap = 16
 tot_horizon = sm_horizon
 time_dim = 64
 
 
 base = {
-    "dataset": "maze2d-large-v1",
-    "dset_h5path": "data/m2d/maze2d-large-sparse-v1-smoke.hdf5",  #####
+    "dataset": "maze2d-umaze-v1",
+    ## TODO:
+    # 'dset_h5path': 'data/data_hdf5_ben/ben-maze2d-umaze-sparse-v1.hdf5', #####
+    "dset_h5path": "data/m2d/maze2d-umaze-sparse-v1-smoke.hdf5",
     "diffusion": {
         "config_fn": "",
         "sm_horizon": sm_horizon,
@@ -88,17 +88,17 @@ base = {
         "preprocess_fns": ["ben_maze2d_set_terminals"],  ####
         "clip_denoised": True,
         "use_padding": True,
-        "max_path_length": 640,
-        "max_n_episodes": 21500,
+        "max_path_length": 256,
+        "max_n_episodes": 51500,
         "dataset_config": dict(
             obs_select_dim=(0, 1),
-            dset_type="bens_pm_large",
+            dset_type="bens_pm_umaze",
             pad_type="first_last",
-            extra_pad=60,
+            extra_pad=40,
         ),
         ## serialization
-        "logbase": "artifacts/runs",
-        "prefix": "diffusion/",
+        "logbase": "artifacts",
+        "prefix": "",
         "exp_name": watch(diffusion_args_to_watch),
         ## training
         "n_steps_per_epoch": 10000,
@@ -126,7 +126,7 @@ base = {
         "normalizer": "LimitsNormalizer",
         ## serialization
         "vis_freq": 10,
-        "logbase": "artifacts/runs",
+        "logbase": "artifacts",
         "prefix": "plans/release",
         "exp_name": watch(plan_args_to_watch),
         "suffix": "0",

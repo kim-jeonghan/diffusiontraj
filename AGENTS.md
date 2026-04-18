@@ -8,12 +8,12 @@ This repository is a `uv`-managed Python project focused on Maze2D diffusion tra
 - `src/comp_diffuser/models/`: diffusion, common blocks, and networks
 - `src/comp_diffuser/trainers/`: training loops
 - `src/comp_diffuser/planners/`: planning and policy logic
-- `configs/experiment/maze2d/`: experiment configs
+- `configs/maze2d/`: experiment configs
 - `scripts/`: runnable entrypoints such as `train_maze_baseline.py`
 - `tests/`: smoke and regression tests
 - `data/m2d/`: local Maze2D HDF5 datasets
 - `data/eval_problems/`: saved planning problem sets
-- `artifacts/runs/`: generated checkpoints, config snapshots, and renders
+- `artifacts/`: generated checkpoints, config snapshots, and renders
 
 ## Build, Test, and Development Commands
 
@@ -22,7 +22,7 @@ This repository is a `uv`-managed Python project focused on Maze2D diffusion tra
 - `uv run pytest -q tests/test_maze2d_smoke.py`: verify local dataset loading
 - `uvx ruff check .`: run lint checks
 - `uvx ruff check . --fix`: apply safe lint fixes
-- `uv run python scripts/train_maze_baseline.py --config configs/experiment/maze2d/maze2d_umaze_baseline_config.py --device cpu`: run baseline training
+- `uv run python scripts/train_maze_baseline.py --config configs/maze2d/maze2d_umaze_baseline_config.py --device cpu`: run baseline training
 
 Use `WANDB_MODE=disabled` for local smoke runs unless you want online logging.
 
@@ -47,4 +47,4 @@ For pull requests, include:
 
 ## Configuration Tips
 
-Keep `dataset`, `dset_h5path`, horizon values, and `n_diffusion_steps` aligned across the `diffusion` and `plan` blocks in each config. Use relative paths such as `data/m2d/...` and `artifacts/runs/...` to keep runs portable.
+Keep `dataset`, `dset_h5path`, horizon values, and `n_diffusion_steps` aligned across the `diffusion` and `plan` blocks in each config. Use relative paths such as `data/m2d/...` and `artifacts/...` to keep runs portable.

@@ -5,14 +5,12 @@ from comp_diffuser.utils.setup import watch
 config_fn = osp.splitext(osp.basename(__file__))[0]
 
 diffusion_args_to_watch = [
-    ("prefix", ""),
     ("config_fn", config_fn),
     ("horizon", "H"),
     ("n_diffusion_steps", "T"),
 ]
 
 plan_args_to_watch = [
-    ("prefix", ""),
     ("config_fn", config_fn),
     ("horizon", "H"),
     ("n_diffusion_steps", "T"),
@@ -99,8 +97,8 @@ base = {
             pad_type="first_last",
             extra_pad=68,
         ),
-        "logbase": "artifacts/runs",
-        "prefix": "diffusion/",
+        "logbase": "artifacts",
+        "prefix": "",
         "exp_name": watch(diffusion_args_to_watch),
         "n_steps_per_epoch": 10000,
         "loss_type": "l2_inv_v3",
@@ -124,7 +122,7 @@ base = {
         "n_diffusion_steps": 512,
         "normalizer": "LimitsNormalizer",
         "vis_freq": 10,
-        "logbase": "artifacts/runs",
+        "logbase": "artifacts",
         "prefix": "plans/release",
         "exp_name": watch(plan_args_to_watch),
         "suffix": "0",

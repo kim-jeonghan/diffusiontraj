@@ -14,11 +14,11 @@ uv sync --extra dev
 
 - `src/comp_diffuser/`: library code
 - `scripts/`: train and plan entrypoints
-- `configs/experiment/maze2d/`: Maze2D experiment configs
+- `configs/maze2d/`: Maze2D experiment configs
 - `tests/`: smoke and regression tests
 - `data/m2d/`: local Maze2D HDF5 datasets
 - `data/eval_problems/`: planning problem sets
-- `artifacts/runs/`: checkpoints, config snapshots, renders, and plan outputs
+- `artifacts/`: checkpoints, config snapshots, renders, and plan outputs
 
 ## Train
 
@@ -27,7 +27,7 @@ Baseline training:
 ```bash
 WANDB_MODE=disabled \
 uv run python scripts/train_maze_baseline.py \
-  --config configs/experiment/maze2d/maze2d_umaze_baseline_config.py \
+  --config configs/maze2d/maze2d_umaze_baseline_config.py \
   --device cpu
 ```
 
@@ -36,7 +36,7 @@ Smoke run:
 ```bash
 WANDB_MODE=disabled \
 uv run python scripts/train_maze_baseline.py \
-  --config configs/experiment/maze2d/maze2d_umaze_baseline_smoke_config.py \
+  --config configs/maze2d/maze2d_umaze_baseline_smoke_config.py \
   --device cpu \
   --n_train_steps 0
 ```
@@ -49,12 +49,12 @@ Planning expects an existing baseline run:
 
 ```bash
 uv run python scripts/plan_maze_baseline.py \
-  --config configs/experiment/maze2d/maze2d_umaze_baseline_config.py \
+  --config configs/maze2d/maze2d_umaze_baseline_config.py \
   --device cpu \
   --plan_n_ep 1
 ```
 
-`--plan_n_ep 1` is a minimal sanity run. Planning resolves `diffusion_epoch=latest` from the matching training directory under `artifacts/runs/`.
+`--plan_n_ep 1` is a minimal sanity run. Planning resolves `diffusion_epoch=latest` from the matching training directory under `artifacts/`.
 
 ## Test and Lint
 
@@ -67,7 +67,7 @@ uvx ruff check . --fix
 
 ## Config Notes
 
-Each file in `configs/experiment/maze2d/` exports a `base` dictionary with `dataset`, `dset_h5path`, `diffusion`, and `plan` blocks. Keep `dataset`, `dset_h5path`, horizon values, and `n_diffusion_steps` aligned across training and planning.
+Each file in `configs/maze2d/` exports a `base` dictionary with `dataset`, `dset_h5path`, `diffusion`, and `plan` blocks. Keep `dataset`, `dset_h5path`, horizon values, and `n_diffusion_steps` aligned across training and planning.
 
 Current configs:
 
@@ -78,7 +78,7 @@ Current configs:
 
 ## Outputs
 
-Training and planning write to `artifacts/runs/<dataset>/<exp_name>/...`.
+Training and planning write to `artifacts/<dataset>/<exp_name>/...`.
 
 Common generated files:
 

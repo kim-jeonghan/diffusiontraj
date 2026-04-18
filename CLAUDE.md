@@ -15,22 +15,22 @@ Requires Python 3.11 (locked in `.python-version`). Uses `uv` as the package man
 **Training:**
 ```bash
 WANDB_MODE=disabled uv run python scripts/train_maze_baseline.py \
-  --config configs/experiment/maze2d/maze2d_umaze_baseline_config.py \
+  --config configs/maze2d/maze2d_umaze_baseline_config.py \
   --device cpu
 
 WANDB_MODE=disabled uv run python scripts/train_trajectory_stitching.py \
-  --config configs/experiment/maze2d/maze2d_umaze_baseline_config.py \
+  --config configs/maze2d/maze2d_umaze_baseline_config.py \
   --device cpu
 ```
 
 **Planning** (requires an existing training run):
 ```bash
 uv run python scripts/plan_maze_baseline.py \
-  --config configs/experiment/maze2d/maze2d_umaze_baseline_config.py \
+  --config configs/maze2d/maze2d_umaze_baseline_config.py \
   --device cpu --plan_n_ep 1
 
 uv run python scripts/plan_trajectory_stitching.py \
-  --config configs/experiment/maze2d/maze2d_umaze_baseline_config.py \
+  --config configs/maze2d/maze2d_umaze_baseline_config.py \
   --device cpu --plan_n_ep 1
 ```
 `--plan_n_ep -100` means "all episodes". Planning scripts auto-resolve `diffusion_epoch=latest` from the matching training run directory.
@@ -39,7 +39,7 @@ uv run python scripts/plan_trajectory_stitching.py \
 ```bash
 DIFFUSER_DEVICE=cpu WANDB_MODE=disabled \
 uv run python scripts/train_maze_baseline.py \
-  --config configs/experiment/maze2d/maze2d_umaze_baseline_smoke_config.py \
+  --config configs/maze2d/maze2d_umaze_baseline_smoke_config.py \
   --device cpu --n_train_steps 0
 ```
 Expected final output: `Testing forward... ✓`
@@ -93,7 +93,7 @@ Load checkpoint → Policy (MazePolicy or TrajectoryStitchingPolicy)
 
 ### Config System
 
-Each experiment is a single Python file in `configs/experiment/maze2d/` that exports a `base` dict with `diffusion` and `plan` blocks. CLI flags override config values. Key rules:
+Each experiment is a single Python file in `configs/maze2d/` that exports a `base` dict with `diffusion` and `plan` blocks. CLI flags override config values. Key rules:
 - `exp_name` is built with `watch(...)` for deterministic, human-readable directory names.
 - `dataset`, `dset_h5path`, horizon, and `n_diffusion_steps` must be aligned across both blocks.
 - Knobs belong in `dataset_config`, `network_config`, or `diff_config` sub-dicts.
