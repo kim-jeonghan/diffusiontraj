@@ -1,4 +1,5 @@
 import glob
+import importlib
 import os
 import pickle
 from collections import namedtuple
@@ -86,7 +87,10 @@ def load_comp_datasetNormalizer(args_train):
     """
     assert isinstance(args_train.normalizer, str)
     # is_kuka = 'kuka' in train_env_list.name # hasattr(train_env_list, 'robot_env')
-    normalizer = eval(args_train.normalizer)
+    normalization_module = importlib.import_module(
+        "comp_diffuser.datasets.normalization"
+    )
+    normalizer = getattr(normalization_module, args_train.normalizer)
 
     # ------------------- load from abc, can be extracted -------------------
     norm_const_dict = args_train.dataset_config.get("norm_const_dict", False)

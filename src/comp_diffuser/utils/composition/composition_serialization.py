@@ -1,3 +1,4 @@
+import importlib
 import os
 import pdb
 
@@ -140,8 +141,10 @@ def load_trajectory_stitching_dataset_normalizer(
         normalizer: a class
     """
     assert isinstance(args_train.normalizer, str)
-    # is_kuka = 'kuka' in train_env_list.name # hasattr(train_env_list, 'robot_env')
-    normalizer = eval(args_train.normalizer)
+    normalization_module = importlib.import_module(
+        "comp_diffuser.datasets.normalization"
+    )
+    normalizer = getattr(normalization_module, args_train.normalizer)
 
     # ------------------- load from abc, can be extracted -------------------
     data_dict = {}
