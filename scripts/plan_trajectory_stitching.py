@@ -60,13 +60,11 @@ def main(args_train, args):
         ## plan_n_ep
         if Is_Gym_Robot_Env:
             if pl_seeds[0] == -1:  ## no seed
-                avg_result_dict = m2d_planner.ben_plan_once_parallel(
+                avg_result_dict = m2d_planner.plan_once(
                     pl_seed=None,
                 )
             else:
-                avg_result_dict = m2d_planner.ben_plan_once_parallel(
-                    pl_seed=pl_seeds[0]
-                )
+                avg_result_dict = m2d_planner.plan_once(pl_seed=pl_seeds[0])
         else:
             if pl_seeds[0] == -1:  ## no seed
                 # avg_result_dict = m2d_planner.plan_once(pl_seed=None,)

@@ -950,21 +950,16 @@ class TrajectoryStitchingMazePlanner:
                 st_state = self.problems_dict["start_state"][i_ep,]
                 gl_pos = self.problems_dict["goal_pos"][i_ep]
 
-            self.env.set_state(qpos=st_state[:2], qvel=st_state[2:])
             assert (st_state[2:] == np.array([0.0, 0.0])).all(), "zero start speed"
             assert gl_pos.shape == (2,)
 
-            obs_cur = self.env.state_vector().copy()
+            start_goal = self._problem_xy_to_env_cells(st_state[:2], gl_pos)
+            obs_gyro, _ = self.env.reset(options=start_goal)
+            obs_cur = obs_gyro["observation"]
             # pdb.set_trace() ## check current state
 
-            ## <d4rl.pointmaze.maze_model.MazeEnv>
-            self.env.set_target(target_location=gl_pos)  ## used to change the target
-            ## check target NOTE:
-            # pdb.set_trace()
-
             rollout = [obs_cur.copy()]
-            # start_state_list.append(obs_cur)
-            target = self.env._target  # tuple large: (7,9)
+            target = self.env.goal
             ep_targets.append(target)
 
             # pdb.set_trace() ## check target
@@ -977,7 +972,7 @@ class TrajectoryStitchingMazePlanner:
 
             for t in range(self.env.max_episode_steps):
                 ## redundant, same as obs_cur, for the janner's controller
-                cur_state = self.env.state_vector().copy()
+                cur_state = self.ben_env_get_obs().copy()
                 assert (obs_cur == cur_state).all()
                 assert len(cur_state) == 4, "only for maze2D, for now."
 
@@ -1042,12 +1037,13 @@ class TrajectoryStitchingMazePlanner:
 
                 ## by default, terminal is False forever
                 ## np 1d (4,); float; bool (is finished, always False);
-                obs_next, rew, terminal, _ = self.env.step(action)
+                obs_gyro, rew, terminated, truncated, _ = self.env.step(action)
+                obs_next = obs_gyro["observation"]
 
                 is_suc = rew > 0 or is_suc  ## sparse reward
 
                 total_reward += rew
-                score = self.env.get_normalized_score(total_reward) * 100
+                score = total_reward
 
                 if t % 50 == 0:
                     print(
